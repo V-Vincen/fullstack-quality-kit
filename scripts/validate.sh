@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_ROOT="$REPO_ROOT/.codex/skills/fullstack-review"
+WORKFLOW_ROOT="$SKILL_ROOT/workflows"
 CHECKLIST_ROOT="$REPO_ROOT/.codex/checklists"
 
 error_count=0
@@ -22,6 +23,18 @@ require_file() {
 require_file "$REPO_ROOT/AGENTS.md"
 require_file "$REPO_ROOT/README.md"
 require_file "$SKILL_ROOT/SKILL.md"
+
+for workflow_name in \
+  preflight-grill.md \
+  design-context.md \
+  tdd-verification.md \
+  visualization.md; do
+  require_file "$WORKFLOW_ROOT/$workflow_name"
+  if ! grep -qF "workflows/$workflow_name" "$SKILL_ROOT/SKILL.md"; then
+    fail "主 skill 未引用工作流：workflows/$workflow_name"
+  fi
+done
+
 require_file "$CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md"
 require_file "$CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md"
 require_file "$CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md"
@@ -112,4 +125,4 @@ if [[ "$error_count" -ne 0 ]]; then
   exit 1
 fi
 
-echo "验证通过：8 个 skill、4 个总清单、26 个领域子清单、活动引用、Unix 入口和 Windows 入口均正常。"
+echo "验证通过：8 个 skill、4 个工作流、4 个总清单、26 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。"

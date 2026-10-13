@@ -8,6 +8,8 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $RepoRoot = Split-Path -Parent $ScriptDir
 $SkillRoot = Join-Path $RepoRoot '.codex\skills\fullstack-review'
+$WorkflowRoot = Join-Path $SkillRoot 'workflows'
+$MainSkillFile = Join-Path $SkillRoot 'SKILL.md'
 $ChecklistRoot = Join-Path $RepoRoot '.codex\checklists'
 $ErrorCount = 0
 
@@ -36,12 +38,27 @@ if ($Help) {
 @(
     (Join-Path $RepoRoot 'AGENTS.md'),
     (Join-Path $RepoRoot 'README.md'),
-    (Join-Path $SkillRoot 'SKILL.md'),
+    $MainSkillFile,
     (Join-Path $ChecklistRoot 'CODE_REVIEW_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'BUSINESS_TEST_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'DB_CHANGE_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'EXTERNAL_API_DOC_CHECKLIST.md')
 ) | ForEach-Object { Require-File $_ }
+
+$WorkflowFiles = @(
+    'preflight-grill.md',
+    'design-context.md',
+    'tdd-verification.md',
+    'visualization.md'
+)
+foreach ($WorkflowFileName in $WorkflowFiles) {
+    $WorkflowFile = Join-Path $WorkflowRoot $WorkflowFileName
+    Require-File $WorkflowFile
+    if ((Test-Path -LiteralPath $MainSkillFile -PathType Leaf) -and
+        -not (Select-String -LiteralPath $MainSkillFile -Pattern ('workflows/{0}' -f $WorkflowFileName) -SimpleMatch -Quiet)) {
+        Fail-Validation ('主 skill 未引用工作流：workflows/{0}' -f $WorkflowFileName)
+    }
+}
 
 $SkillFiles = @(Get-ChildItem -LiteralPath $SkillRoot -File -Recurse -Filter 'SKILL.md' | Sort-Object FullName)
 if ($SkillFiles.Count -ne 8) {
@@ -165,4 +182,4 @@ if ($ErrorCount -ne 0) {
     exit 1
 }
 
-Write-Output '验证通过：8 个 skill、4 个总清单、26 个领域子清单、活动引用、Windows 入口和脚本语法均正常。'
+Write-Output '验证通过：8 个 skill、4 个工作流、4 个总清单、26 个领域子清单、工作流引用、活动引用、Windows 入口和脚本语法均正常。'
