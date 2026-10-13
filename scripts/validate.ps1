@@ -61,6 +61,12 @@ foreach ($WorkflowFileName in $WorkflowFiles) {
     }
 }
 
+$ExpectedWorkflowCount = 5
+$WorkflowCount = @(Get-ChildItem -LiteralPath $WorkflowRoot -File -Filter '*.md').Count
+if ($WorkflowCount -ne $ExpectedWorkflowCount) {
+    Fail-Validation ('工作流数量应为 {0}，实际为 {1}' -f $ExpectedWorkflowCount, $WorkflowCount)
+}
+
 $SkillFiles = @(Get-ChildItem -LiteralPath $SkillRoot -File -Recurse -Filter 'SKILL.md' | Sort-Object FullName)
 if ($SkillFiles.Count -ne 8) {
     Fail-Validation ('skill 数量应为 8，实际为 {0}' -f $SkillFiles.Count)

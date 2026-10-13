@@ -36,6 +36,10 @@ for workflow_name in \
   fi
 done
 
+expected_workflow_count=5
+workflow_count="$(find "$WORKFLOW_ROOT" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
+[[ "$workflow_count" -eq "$expected_workflow_count" ]] || fail "工作流数量应为 ${expected_workflow_count}，实际为 ${workflow_count}"
+
 require_file "$CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md"
 require_file "$CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md"
 require_file "$CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md"
