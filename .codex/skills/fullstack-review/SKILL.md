@@ -17,6 +17,7 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `A
 - 新增 Skill、清单、路由或进行架构调整：读取 `workflows/design-context.md`。
 - 修改 Skill、清单、路由或脚本：读取 `workflows/tdd-verification.md`。
 - 用户要求画图，或 Skill、清单、脚本与状态流转关系复杂：读取 `workflows/visualization.md`。
+- 用户要求用户流程验收、上线前体验验收，或本次审查覆盖核心用户流程：读取 `workflows/user-journey-acceptance.md`。
 
 工作流之间可以按实际任务组合。优先澄清不明确的需求；涉及新增或结构调整时先形成可确认的设计；写入后执行验证；图形化说明可在已有真实文件和路由证据的基础上补充。
 

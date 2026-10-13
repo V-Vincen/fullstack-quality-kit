@@ -13,6 +13,7 @@ CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解�
 - 通用业务测试：`CHECKLIST_ROOT/business-test/business-test-baseline.md`
 - 接口行为：`CHECKLIST_ROOT/business-test/api-behavior.md`
 - 前端交互：`CHECKLIST_ROOT/business-test/frontend-interaction.md`
+- 用户流程验收：`CHECKLIST_ROOT/business-test/user-journey-acceptance.md`
 - 状态流转：`CHECKLIST_ROOT/business-test/state-transition.md`
 - 权限边界：`CHECKLIST_ROOT/business-test/permission-boundary.md`
 - 并发与幂等：`CHECKLIST_ROOT/business-test/concurrency-idempotency.md`

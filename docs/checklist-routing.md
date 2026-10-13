@@ -52,6 +52,7 @@ fullstack-review
 | 新增 Skill、清单、路由或调整结构 | `workflows/design-context.md` | 先输出设计方案，获得确认后再修改。 |
 | 修改 Skill、清单、路由或脚本 | `workflows/tdd-verification.md` | 对已授权修改执行行为和回归验证。 |
 | 用户要求画图或关系复杂 | `workflows/visualization.md` | 基于真实文件和已验证路由输出 Mermaid。 |
+| 用户要求用户流程或上线前体验验收，或审查覆盖核心用户流程 | `workflows/user-journey-acceptance.md` | 从真实用户入口验收后，返回主流程继续路由。 |
 
 - 授权规则、总清单和领域子清单的门禁优先于工作流；工作流不得绕过或替代它们。
 - 只有满足触发条件时才读取对应工作流，普通代码审查不得无条件加载全部工作流。

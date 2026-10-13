@@ -28,7 +28,8 @@ for workflow_name in \
   preflight-grill.md \
   design-context.md \
   tdd-verification.md \
-  visualization.md; do
+  visualization.md \
+  user-journey-acceptance.md; do
   require_file "$WORKFLOW_ROOT/$workflow_name"
   if ! grep -qF "workflows/$workflow_name" "$SKILL_ROOT/SKILL.md"; then
     fail "主 skill 未引用工作流：workflows/$workflow_name"
@@ -78,7 +79,13 @@ total_checklists="$(find "$CHECKLIST_ROOT" -type f -name '*.md' | wc -l | tr -d 
 root_checklists="$(find "$CHECKLIST_ROOT" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
 domain_checklists=$((total_checklists - root_checklists))
 [[ "$root_checklists" -eq 4 ]] || fail "总清单数量应为 4，实际为 $root_checklists"
-[[ "$domain_checklists" -eq 26 ]] || fail "领域子清单数量应为 26，实际为 $domain_checklists"
+[[ "$domain_checklists" -eq 27 ]] || fail "领域子清单数量应为 27，实际为 $domain_checklists"
+
+user_journey_checklist="$CHECKLIST_ROOT/business-test/user-journey-acceptance.md"
+require_file "$user_journey_checklist"
+if ! grep -qF 'business-test/user-journey-acceptance.md' "$CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md"; then
+  fail '业务测试总清单未路由用户流程验收子清单'
+fi
 
 for routed_file in \
   "$SKILL_ROOT/backend/database-review/SKILL.md" \
@@ -125,4 +132,4 @@ if [[ "$error_count" -ne 0 ]]; then
   exit 1
 fi
 
-echo "验证通过：8 个 skill、4 个工作流、4 个总清单、26 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。"
+echo "验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。"

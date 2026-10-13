@@ -49,7 +49,8 @@ $WorkflowFiles = @(
     'preflight-grill.md',
     'design-context.md',
     'tdd-verification.md',
-    'visualization.md'
+    'visualization.md',
+    'user-journey-acceptance.md'
 )
 foreach ($WorkflowFileName in $WorkflowFiles) {
     $WorkflowFile = Join-Path $WorkflowRoot $WorkflowFileName
@@ -120,8 +121,15 @@ $DomainChecklists = $TotalChecklists - $RootChecklists
 if ($RootChecklists -ne 4) {
     Fail-Validation ('总清单数量应为 4，实际为 {0}' -f $RootChecklists)
 }
-if ($DomainChecklists -ne 26) {
-    Fail-Validation ('领域子清单数量应为 26，实际为 {0}' -f $DomainChecklists)
+if ($DomainChecklists -ne 27) {
+    Fail-Validation ('领域子清单数量应为 27，实际为 {0}' -f $DomainChecklists)
+}
+
+$UserJourneyChecklist = Join-Path $ChecklistRoot 'business-test\user-journey-acceptance.md'
+Require-File $UserJourneyChecklist
+if ((Test-Path -LiteralPath (Join-Path $ChecklistRoot 'BUSINESS_TEST_CHECKLIST.md') -PathType Leaf) -and
+    -not (Select-String -LiteralPath (Join-Path $ChecklistRoot 'BUSINESS_TEST_CHECKLIST.md') -Pattern 'business-test/user-journey-acceptance.md' -SimpleMatch -Quiet)) {
+    Fail-Validation '业务测试总清单未路由用户流程验收子清单'
 }
 
 @(
@@ -182,4 +190,4 @@ if ($ErrorCount -ne 0) {
     exit 1
 }
 
-Write-Output '验证通过：8 个 skill、4 个工作流、4 个总清单、26 个领域子清单、工作流引用、活动引用、Windows 入口和脚本语法均正常。'
+Write-Output '验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Windows 入口和脚本语法均正常。'
