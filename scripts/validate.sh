@@ -7,6 +7,7 @@ SKILL_ROOT="$REPO_ROOT/.codex/skills/fullstack-review"
 WORKFLOW_ROOT="$SKILL_ROOT/workflows"
 CHECKLIST_ROOT="$REPO_ROOT/.codex/checklists"
 RULES_FILE="$SCRIPT_DIR/validation-rules.conf"
+GLOBAL_RULE_BLOCK="$REPO_ROOT/rules/global-agents.block.md"
 
 error_count=0
 
@@ -87,6 +88,16 @@ require_file "$REPO_ROOT/AGENTS.md"
 require_file "$REPO_ROOT/README.md"
 require_file "$SKILL_ROOT/SKILL.md"
 require_file "$RULES_FILE"
+require_file "$GLOBAL_RULE_BLOCK"
+
+for document_file in \
+  checklist-routing.md \
+  installation.md \
+  markdown-style-guide.md \
+  migration-map.md \
+  usage.md; do
+  require_file "$REPO_ROOT/docs/$document_file"
+done
 
 load_validation_rules
 
@@ -166,6 +177,15 @@ for routed_file in \
   require_file "$routed_file"
 done
 
+for unix_script in \
+  validate.sh \
+  install-project.sh \
+  install-global.sh \
+  uninstall-global.sh \
+  status.sh; do
+  require_file "$SCRIPT_DIR/$unix_script"
+done
+
 for windows_script in \
   validate.ps1 \
   install-project.ps1 \
@@ -179,6 +199,18 @@ for windows_script in \
   status.bat; do
   require_file "$SCRIPT_DIR/$windows_script"
 done
+
+if [[ -f "$GLOBAL_RULE_BLOCK" ]] && grep -q '^# ' "$GLOBAL_RULE_BLOCK"; then
+  fail '全局规则片段不能包含一级标题，避免合并后破坏全局 AGENTS.md 结构'
+fi
+
+if grep -RInE '/Users/[^/[:space:]]+|[A-Za-z]:\\Users\\' \
+  "$REPO_ROOT/README.md" \
+  "$REPO_ROOT/AGENTS.md" \
+  "$REPO_ROOT/rules" \
+  "$REPO_ROOT/docs" >/dev/null 2>&1; then
+  fail '公开规则或文档中仍包含个人用户目录'
+fi
 
 for batch_script in "$SCRIPT_DIR"/*.bat; do
   [[ -f "$batch_script" ]] || continue
@@ -196,9 +228,13 @@ for script_file in "$SCRIPT_DIR"/*.sh; do
   bash -n "$script_file" || fail "脚本语法错误：$script_file"
 done
 
+if ! command -v pwsh >/dev/null 2>&1 && ! command -v powershell >/dev/null 2>&1; then
+  echo '提示：当前环境未找到 pwsh 或 powershell，仅验证 Windows 入口文件和批处理转发关系。' >&2
+fi
+
 if [[ "$error_count" -ne 0 ]]; then
   echo "验证失败：$error_count 项。" >&2
   exit 1
 fi
 
-echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。"
+echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、工作流引用、活动引用、Unix 入口与语法、Windows 入口文件与批处理转发关系均正常。"

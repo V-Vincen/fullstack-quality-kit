@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [switch]$Yes,
+    [switch]$SkipAgents,
     [string]$CodexHomePath,
     [switch]$Help
 )
@@ -25,7 +26,7 @@ function Get-DefaultCodexHome {
 }
 
 function Show-Usage {
-    Write-Output '用法：.\scripts\install-global.ps1 [-Yes] [-CodexHomePath <Codex 全局目录>]'
+    Write-Output '用法：.\scripts\install-global.ps1 [-Yes] [-SkipAgents] [-CodexHomePath <Codex 全局目录>]'
     Write-Output ('默认目录：{0}' -f (Get-DefaultCodexHome))
 }
 
@@ -80,20 +81,27 @@ function Test-SameFile {
 function Test-PreflightTree {
     param(
         [string]$SourceDir,
-        [string]$TargetDir
+        [string]$TargetDir,
+        [System.Collections.Generic.List[object]]$ManifestRecords
     )
     foreach ($SourceFile in Get-SourceFiles $SourceDir) {
         $TargetFile = Get-TargetFile $TargetDir (Get-RelativePath $SourceDir $SourceFile)
         if (Test-Path -LiteralPath $TargetFile) {
-            if ((Test-Path -LiteralPath $TargetFile -PathType Container) -or
-                -not (Test-SameFile $SourceFile.FullName $TargetFile)) {
+            if (Test-Path -LiteralPath $TargetFile -PathType Container) {
+                throw ('冲突：目标文件已存在且内容不同：{0}' -f $TargetFile)
+            }
+            if (Test-SameFile $SourceFile.FullName $TargetFile) {
+                continue
+            }
+            $Record = Get-ManifestRecordForPath $ManifestRecords 'file' $TargetFile
+            if ($null -eq $Record -or (Get-FileHashValue $TargetFile) -cne $Record.Hash) {
                 throw ('冲突：目标文件已存在且内容不同：{0}' -f $TargetFile)
             }
         }
     }
 }
 
-function Get-ManagedBlock {
+function Get-ManagedBlockIndexes {
     param([object[]]$Lines)
     $StartIndexes = @(
         for ($Index = 0; $Index -lt $Lines.Count; $Index++) {
@@ -120,7 +128,43 @@ function Get-ManagedBlock {
     if ($EndIndex -le $StartIndex) {
         throw '失败：全局 AGENTS.md 的管理区块不完整。'
     }
-    return @($Lines[$StartIndex..$EndIndex])
+    return @($StartIndex, $EndIndex)
+}
+
+function Get-ManagedBlock {
+    param([object[]]$Lines)
+    $Indexes = Get-ManagedBlockIndexes $Lines
+    if ($null -eq $Indexes) {
+        return $null
+    }
+    return @($Lines[$Indexes[0]..$Indexes[1]])
+}
+
+function Set-ManagedBlockContent {
+    param(
+        [string]$Path,
+        [object[]]$DesiredBlock
+    )
+    $Lines = @(Get-Content -LiteralPath $Path)
+    $Indexes = Get-ManagedBlockIndexes $Lines
+    if ($null -eq $Indexes) {
+        throw '失败：全局 AGENTS.md 的管理区块已缺失。'
+    }
+    $NewLines = New-Object 'System.Collections.Generic.List[string]'
+    for ($Index = 0; $Index -lt $Indexes[0]; $Index++) {
+        $NewLines.Add([string]$Lines[$Index])
+    }
+    foreach ($Line in $DesiredBlock) {
+        $NewLines.Add([string]$Line)
+    }
+    for ($Index = $Indexes[1] + 1; $Index -lt $Lines.Count; $Index++) {
+        $NewLines.Add([string]$Lines[$Index])
+    }
+    [System.IO.File]::WriteAllLines(
+        $Path,
+        [string[]]$NewLines.ToArray(),
+        [System.Text.UTF8Encoding]::new($false)
+    )
 }
 
 function Test-ManagedPath {
@@ -223,6 +267,25 @@ function Get-ManifestRecords {
     return $Records.ToArray()
 }
 
+function Get-ManifestRecordForPath {
+    param(
+        [System.Collections.Generic.List[object]]$Records,
+        [string]$Kind,
+        [string]$Path
+    )
+    $FullPath = [System.IO.Path]::GetFullPath($Path)
+    foreach ($Record in $Records) {
+        if ($Record.Kind -ceq $Kind -and
+            [System.IO.Path]::GetFullPath($Record.Path).Equals(
+                $FullPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )) {
+            return $Record
+        }
+    }
+    return $null
+}
+
 function Convert-LegacyManifest {
     param(
         [string]$ManifestPath,
@@ -294,23 +357,39 @@ function Copy-Tree {
     param(
         [string]$SourceDir,
         [string]$TargetDir,
-        [System.Collections.Generic.List[string]]$CreatedFiles
+        [System.Collections.Generic.List[object]]$ManifestRecords,
+        [System.Collections.Generic.List[string]]$ManagedFiles
     )
     $Copied = 0
+    $Updated = 0
     $Skipped = 0
     foreach ($SourceFile in Get-SourceFiles $SourceDir) {
         $TargetFile = Get-TargetFile $TargetDir (Get-RelativePath $SourceDir $SourceFile)
         if (Test-Path -LiteralPath $TargetFile) {
-            $Skipped++
+            if (Test-SameFile $SourceFile.FullName $TargetFile) {
+                $Skipped++
+                $Record = Get-ManifestRecordForPath $ManifestRecords 'file' $TargetFile
+                if ($null -ne $Record -and (Get-FileHashValue $TargetFile) -cne $Record.Hash) {
+                    $ManagedFiles.Add([System.IO.Path]::GetFullPath($TargetFile))
+                }
+                continue
+            }
+            $Record = Get-ManifestRecordForPath $ManifestRecords 'file' $TargetFile
+            if ($null -eq $Record -or (Get-FileHashValue $TargetFile) -cne $Record.Hash) {
+                throw ('失败：目标文件在预检后发生变化：{0}' -f $TargetFile)
+            }
+            Copy-Item -LiteralPath $SourceFile.FullName -Destination $TargetFile -Force
+            $ManagedFiles.Add([System.IO.Path]::GetFullPath($TargetFile))
+            $Updated++
             continue
         }
         $TargetParent = Split-Path -Parent $TargetFile
         New-Item -ItemType Directory -Path $TargetParent -Force | Out-Null
         Copy-Item -LiteralPath $SourceFile.FullName -Destination $TargetFile
-        $CreatedFiles.Add([System.IO.Path]::GetFullPath($TargetFile))
+        $ManagedFiles.Add([System.IO.Path]::GetFullPath($TargetFile))
         $Copied++
     }
-    Write-Output ('已处理 {0}：新增 {1} 个，已存在且一致 {2} 个。' -f $SourceDir, $Copied, $Skipped)
+    Write-Output ('已处理 {0}：新增 {1} 个，安全升级 {2} 个，已存在且一致 {3} 个。' -f $SourceDir, $Copied, $Updated, $Skipped)
 }
 
 function Backup-GlobalAgents {
@@ -331,6 +410,53 @@ function Backup-GlobalAgents {
     }
     Copy-Item -LiteralPath $AgentsPath -Destination $BackupPath
     Write-Output ('已备份全局规则：{0}' -f $BackupPath)
+}
+
+function Assert-AgentsWritePrecondition {
+    param(
+        [string]$Mode,
+        [string]$AgentsPath,
+        [object[]]$DesiredBlock,
+        [System.Collections.Generic.List[object]]$ManifestRecords,
+        [bool]$ShouldSkip
+    )
+    if ($ShouldSkip) {
+        return
+    }
+    if ($Mode -ceq 'Create') {
+        if (Test-Path -LiteralPath $AgentsPath) {
+            throw '冲突：全局 AGENTS.md 在确认后已创建。'
+        }
+        return
+    }
+    if (-not (Test-Path -LiteralPath $AgentsPath -PathType Leaf)) {
+        throw '冲突：全局 AGENTS.md 在确认后发生变化。'
+    }
+    $CurrentBlock = Get-ManagedBlock @(Get-Content -LiteralPath $AgentsPath)
+    if ($Mode -ceq 'Append') {
+        if ($null -ne $CurrentBlock) {
+            throw '冲突：全局 AGENTS.md 在确认后发生变化。'
+        }
+        return
+    }
+    if ($null -eq $CurrentBlock) {
+        throw '冲突：全局 AGENTS.md 在确认后发生变化。'
+    }
+    $CurrentHash = Get-BlockHash $CurrentBlock
+    if ($Mode -ceq 'None') {
+        if ($CurrentHash -cne (Get-BlockHash $DesiredBlock)) {
+            throw '冲突：全局 AGENTS.md 在确认后发生变化。'
+        }
+        return
+    }
+    if ($Mode -ceq 'Replace') {
+        $Record = Get-ManifestRecordForPath $ManifestRecords 'agents-block' $AgentsPath
+        if ($null -eq $Record -or $CurrentHash -cne $Record.Hash) {
+            throw '冲突：全局 AGENTS.md 在确认后发生变化。'
+        }
+        return
+    }
+    throw ('失败：未知的全局规则写入模式：{0}' -f $Mode)
 }
 
 if ($Help) {
@@ -362,6 +488,7 @@ if (Test-Path -LiteralPath $Manifest -and -not (Test-Path -LiteralPath $Manifest
 
 $ManifestRecords = New-Object 'System.Collections.Generic.List[object]'
 $ManifestNeedsWrite = $false
+$LegacyManifestUpgraded = $false
 if (Test-Path -LiteralPath $Manifest -PathType Leaf) {
     $ManifestFirstLine = @(Get-Content -LiteralPath $Manifest -TotalCount 1)
     if ($ManifestFirstLine.Count -gt 0 -and $ManifestFirstLine[0] -ceq $ManifestHeader) {
@@ -373,63 +500,91 @@ if (Test-Path -LiteralPath $Manifest -PathType Leaf) {
             $ManifestRecords.Add($Record)
         }
         $ManifestNeedsWrite = $true
-        Write-Output '已将在用旧版全局安装清单升级为 v2。'
+        $LegacyManifestUpgraded = $true
     }
 }
 
-Test-PreflightTree $SourceSkillRoot $TargetSkills
-Test-PreflightTree $SourceChecklists $TargetChecklists
+Test-PreflightTree $SourceSkillRoot $TargetSkills $ManifestRecords
+Test-PreflightTree $SourceChecklists $TargetChecklists $ManifestRecords
 
-$AgentsNeedsChange = $false
-if (Test-Path -LiteralPath $GlobalAgents) {
-    if (-not (Test-Path -LiteralPath $GlobalAgents -PathType Leaf)) {
-        throw '失败：全局 AGENTS.md 不是普通文件。'
-    }
-    $CurrentBlock = Get-ManagedBlock @(Get-Content -LiteralPath $GlobalAgents)
-    if ($null -ne $CurrentBlock) {
-        if ((Get-BlockHash $DesiredBlock) -cne (Get-BlockHash $CurrentBlock)) {
-            throw '冲突：全局 AGENTS.md 已有不同的 fullstack-quality-kit 管理区块。'
+$AgentsWriteMode = 'None'
+$AgentsRecordNeedsUpdate = $false
+if (-not $SkipAgents) {
+    if (Test-Path -LiteralPath $GlobalAgents) {
+        if (-not (Test-Path -LiteralPath $GlobalAgents -PathType Leaf)) {
+            throw '失败：全局 AGENTS.md 不是普通文件。'
+        }
+        $CurrentBlock = Get-ManagedBlock @(Get-Content -LiteralPath $GlobalAgents)
+        if ($null -ne $CurrentBlock) {
+            $DesiredHash = Get-BlockHash $DesiredBlock
+            $CurrentHash = Get-BlockHash $CurrentBlock
+            $Record = Get-ManifestRecordForPath $ManifestRecords 'agents-block' $GlobalAgents
+            if ($CurrentHash -ceq $DesiredHash) {
+                if ($null -ne $Record -and $Record.Hash -cne $CurrentHash) {
+                    $AgentsRecordNeedsUpdate = $true
+                }
+            } elseif ($null -ne $Record -and $Record.Hash -ceq $CurrentHash) {
+                $AgentsWriteMode = 'Replace'
+            } else {
+                throw '冲突：全局 AGENTS.md 已有不同的 fullstack-quality-kit 管理区块。'
+            }
+        } else {
+            $AgentsWriteMode = 'Append'
         }
     } else {
-        $AgentsNeedsChange = $true
+        $AgentsWriteMode = 'Create'
     }
-} else {
-    $AgentsNeedsChange = $true
 }
 
 if (-not $Yes) {
-    $Answer = Read-Host ('将安装到 {0}，并可能更新 {1}。继续？ [y/N]' -f $CodexHomePath, $GlobalAgents)
+    if ($SkipAgents) {
+        $Answer = Read-Host ('将安装到 {0}，并跳过全局 AGENTS.md。继续？ [y/N]' -f $CodexHomePath)
+    } else {
+        $Answer = Read-Host ('将安装到 {0}，并可能更新 {1}。继续？ [y/N]' -f $CodexHomePath, $GlobalAgents)
+    }
     if ($Answer -notmatch '^[yY]$') {
         Write-Output '已取消。'
         exit 0
     }
 }
 
-$CreatedFiles = New-Object 'System.Collections.Generic.List[string]'
-Backup-GlobalAgents $GlobalAgents $CodexHomePath $AgentsNeedsChange
+$ManagedFiles = New-Object 'System.Collections.Generic.List[string]'
+$ShouldBackupAgents = $AgentsWriteMode -eq 'Append' -or $AgentsWriteMode -eq 'Replace'
+Assert-AgentsWritePrecondition $AgentsWriteMode $GlobalAgents $DesiredBlock $ManifestRecords $SkipAgents
+Backup-GlobalAgents $GlobalAgents $CodexHomePath $ShouldBackupAgents
 New-Item -ItemType Directory -Path $CodexHomePath, $TargetSkills, $TargetChecklists -Force | Out-Null
-Copy-Tree $SourceSkillRoot $TargetSkills $CreatedFiles
-Copy-Tree $SourceChecklists $TargetChecklists $CreatedFiles
+Copy-Tree $SourceSkillRoot $TargetSkills $ManifestRecords $ManagedFiles
+Copy-Tree $SourceChecklists $TargetChecklists $ManifestRecords $ManagedFiles
 
-if ($AgentsNeedsChange) {
+if ($AgentsWriteMode -eq 'Append') {
     if (Test-Path -LiteralPath $GlobalAgents -PathType Leaf) {
         Add-Content -LiteralPath $GlobalAgents -Value @('') -Encoding UTF8
         Add-Content -LiteralPath $GlobalAgents -Value $DesiredBlock -Encoding UTF8
-    } else {
-        Set-Content -LiteralPath $GlobalAgents -Value $DesiredBlock -Encoding UTF8
     }
+} elseif ($AgentsWriteMode -eq 'Replace') {
+    Set-ManagedBlockContent $GlobalAgents $DesiredBlock
+} elseif ($AgentsWriteMode -eq 'Create') {
+    Set-Content -LiteralPath $GlobalAgents -Value $DesiredBlock -Encoding UTF8
 }
 
-foreach ($CreatedFile in $CreatedFiles) {
-    Set-ManifestRecord $ManifestRecords (New-ManifestRecord 'file' $CreatedFile (Get-FileHashValue $CreatedFile))
+foreach ($ManagedFile in $ManagedFiles) {
+    Set-ManifestRecord $ManifestRecords (New-ManifestRecord 'file' $ManagedFile (Get-FileHashValue $ManagedFile))
     $ManifestNeedsWrite = $true
 }
-if ($AgentsNeedsChange) {
+if ($AgentsWriteMode -ne 'None' -or $AgentsRecordNeedsUpdate) {
     Set-ManifestRecord $ManifestRecords (New-ManifestRecord 'agents-block' $GlobalAgents (Get-BlockHash $DesiredBlock))
     $ManifestNeedsWrite = $true
 }
 if ($ManifestNeedsWrite) {
     Write-Manifest $Manifest $ManifestRecords
+}
+
+if ($LegacyManifestUpgraded) {
+    Write-Output '已将在用旧版全局安装清单升级为 v2。'
+}
+
+if ($SkipAgents) {
+    Write-Output '已按参数跳过全局 AGENTS.md 规则区块。'
 }
 
 Write-Output ('全局安装完成：{0}' -f $CodexHomePath)

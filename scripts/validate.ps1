@@ -12,6 +12,7 @@ $WorkflowRoot = Join-Path $SkillRoot 'workflows'
 $MainSkillFile = Join-Path $SkillRoot 'SKILL.md'
 $ChecklistRoot = Join-Path $RepoRoot '.codex\checklists'
 $RulesFile = Join-Path $ScriptDir 'validation-rules.conf'
+$GlobalRuleBlock = Join-Path $RepoRoot 'rules\global-agents.block.md'
 $ErrorCount = 0
 
 function Show-Usage {
@@ -86,11 +87,20 @@ if ($Help) {
     (Join-Path $RepoRoot 'README.md'),
     $MainSkillFile,
     $RulesFile,
+    $GlobalRuleBlock,
     (Join-Path $ChecklistRoot 'CODE_REVIEW_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'BUSINESS_TEST_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'DB_CHANGE_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'EXTERNAL_API_DOC_CHECKLIST.md')
 ) | ForEach-Object { Require-File $_ }
+
+@(
+    'checklist-routing.md',
+    'installation.md',
+    'markdown-style-guide.md',
+    'migration-map.md',
+    'usage.md'
+) | ForEach-Object { Require-File (Join-Path $RepoRoot ('docs\{0}' -f $_)) }
 
 $ValidationRules = Get-ValidationRules $RulesFile
 $ExpectedSkillCount = $ValidationRules['EXPECTED_SKILL_COUNT']
@@ -211,6 +221,13 @@ $ExpectedPowerShellScripts = @(
     'uninstall-global.ps1',
     'status.ps1'
 )
+$ExpectedUnixScripts = @(
+    'validate.sh',
+    'install-project.sh',
+    'install-global.sh',
+    'uninstall-global.sh',
+    'status.sh'
+)
 $ExpectedBatchScripts = @(
     'validate.bat',
     'install-project.bat',
@@ -218,8 +235,27 @@ $ExpectedBatchScripts = @(
     'uninstall-global.bat',
     'status.bat'
 )
-foreach ($ScriptName in $ExpectedPowerShellScripts + $ExpectedBatchScripts) {
+foreach ($ScriptName in $ExpectedUnixScripts + $ExpectedPowerShellScripts + $ExpectedBatchScripts) {
     Require-File (Join-Path $ScriptDir $ScriptName)
+}
+
+if ((Test-Path -LiteralPath $GlobalRuleBlock -PathType Leaf) -and
+    (Select-String -LiteralPath $GlobalRuleBlock -Pattern '^# ' -Quiet)) {
+    Fail-Validation '全局规则片段不能包含一级标题，避免合并后破坏全局 AGENTS.md 结构'
+}
+
+$PublicDocumentationFiles = @(
+    (Join-Path $RepoRoot 'README.md'),
+    (Join-Path $RepoRoot 'AGENTS.md')
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'rules') -File -Recurse -Filter '*.md' -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty FullName
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'docs') -File -Recurse -Filter '*.md' -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty FullName
+)
+if (Select-String -LiteralPath $PublicDocumentationFiles -Pattern '/Users/[^/\s]+|[A-Za-z]:\\Users\\' -Quiet) {
+    Fail-Validation '公开规则或文档中仍包含个人用户目录'
 }
 
 $PowerShellCommand = Get-Command pwsh -ErrorAction SilentlyContinue
@@ -248,4 +284,4 @@ if ($ErrorCount -ne 0) {
     exit 1
 }
 
-Write-Output ('验证通过：{0} 个 skill、{1} 个工作流、{2} 个总清单、{3} 个领域子清单、工作流引用、活动引用、Windows 入口和脚本语法均正常。' -f $ExpectedSkillCount, $ExpectedWorkflowCount, $ExpectedRootChecklistCount, $ExpectedDomainChecklistCount)
+Write-Output ('验证通过：{0} 个 skill、{1} 个工作流、{2} 个总清单、{3} 个领域子清单、工作流引用、活动引用、Windows 入口与 PowerShell 语法、Unix 入口文件均正常。' -f $ExpectedSkillCount, $ExpectedWorkflowCount, $ExpectedRootChecklistCount, $ExpectedDomainChecklistCount)

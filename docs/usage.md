@@ -3,12 +3,12 @@
 本文通过一个完整案例说明脚本作用、预期结果、项目级使用、全局使用和 Codex 调用方式。示例使用以下路径：
 
 ~~~text
-质量工具仓库：/Users/vincent/Projects/AiCode/fullstack-quality-kit
-业务项目：/Users/vincent/Projects/AiCode/demo-project
-全局 Codex 目录：/Users/vincent/.codex
+质量工具仓库：/path/to/fullstack-quality-kit
+业务项目：/path/to/demo-project
+全局 Codex 目录：~/.codex
 ~~~
 
-脚本默认不覆盖内容不同的已有文件；发现冲突时会停止并报告，避免破坏业务项目或全局配置。
+项目级安装不覆盖内容不同的已有文件；全局安装只会安全升级安装清单记录且未被用户修改的内容。没有安装记录、无法核验或已被用户修改的内容会触发冲突并停止，避免破坏业务项目或全局配置。
 
 ## 脚本总览
 
@@ -16,8 +16,8 @@
 |---|---|---|
 | `validate.sh`、`validate.ps1`、`validate.bat` | 验证 skill、工作流、清单、路由、脚本入口和旧引用 | 按 `scripts/validation-rules.conf` 的统一数量输出验证通过 |
 | `install-project.sh`、`install-project.ps1`、`install-project.bat` | 将 skill 和清单复制到业务项目 `.codex/` | 输出项目级安装完成；一致文件跳过，冲突文件停止 |
-| `install-global.sh`、`install-global.ps1`、`install-global.bat` | 安装到全局 Codex 目录，并合并受标记管理的全局规则区块 | 输出全局安装完成；以安装清单 v2 记录本次新增内容及其内容指纹 |
-| `uninstall-global.sh`、`uninstall-global.ps1`、`uninstall-global.bat` | 卸载全局安装清单中的文件和受管理规则区块 | 仅移除内容指纹仍一致的项目；已修改内容保留并提示未完全卸载 |
+| `install-global.sh`、`install-global.ps1`、`install-global.bat` | 安装或安全升级全局 Codex 内容，并按需合并受管理的全局规则区块 | 输出新增、升级和跳过数量；以安装清单 v2 记录本工具管理的内容及其内容哈希 |
+| `uninstall-global.sh`、`uninstall-global.ps1`、`uninstall-global.bat` | 卸载全局安装清单中的文件和受管理规则区块 | 仅移除内容哈希仍一致的项目；已修改内容保留并提示未完全卸载 |
 | `status.sh`、`status.ps1`、`status.bat` | 对比源文件、项目级安装和全局安装 | 分别输出与当前源的差异，以及安装清单 v2 的一致、已修改、缺失和格式异常状态 |
 
 其中，`.sh` 适用于 macOS/Linux，`.ps1` 适用于 Windows PowerShell，`.bat` 是 Windows 命令提示符入口。批处理文件只负责转发到对应的 PowerShell 脚本。
@@ -31,20 +31,20 @@
 进入质量工具仓库并验证：
 
 ~~~bash
-cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
+cd /path/to/fullstack-quality-kit
 ./scripts/validate.sh
 ~~~
 
 预期结果：
 
 ~~~text
-验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。
+验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Unix 入口与语法、Windows 入口文件与批处理转发关系均正常。
 ~~~
 
 安装到业务项目：
 
 ~~~bash
-./scripts/install-project.sh /Users/vincent/Projects/AiCode/demo-project
+./scripts/install-project.sh /path/to/demo-project
 ~~~
 
 预期结果：
@@ -52,15 +52,15 @@ cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
 ~~~text
 已处理 .../.codex/skills：新增若干文件，已存在且一致若干文件。
 已处理 .../.codex/checklists：新增若干文件，已存在且一致若干文件。
-项目级安装完成：/Users/vincent/Projects/AiCode/demo-project
+项目级安装完成：/path/to/demo-project
 ~~~
 
 检查项目级安装：
 
 ~~~bash
 ./scripts/status.sh \
-  /Users/vincent/Projects/AiCode/demo-project \
-  /Users/vincent/.codex
+  /path/to/demo-project \
+  ~/.codex
 ~~~
 
 项目级目标应显示：
@@ -115,20 +115,20 @@ $fullstack-review
 
 ## 案例二：全局安装和调用
 
-全局安装适合让多个业务项目共用同一套 skill 和清单。默认目标是 `~/.codex/`，不会覆盖用户完整的全局 `AGENTS.md`，只合并 `rules/global-agents.block.md` 管理的规则区块。
+全局安装适合让多个业务项目共用同一套 skill 和清单。默认目标是 `~/.codex/`，不会覆盖用户完整的全局 `AGENTS.md`，只合并 `rules/global-agents.block.md` 管理的规则区块。已有等效联动规则时，可以使用跳过规则参数，避免重复写入。
 
-安装后的 `~/.codex/skills/fullstack-review/` 直接包含 `SKILL.md`、子 skill 和工作流。安装清单 v2 只记录本次新增文件和本次新增的规则区块，并为每项保存内容指纹；因此全局卸载不会处理原先已存在、但内容刚好一致的用户文件。
+安装后的 `~/.codex/skills/fullstack-review/` 直接包含 `SKILL.md`、子 skill 和工作流。安装清单 v2 只记录本工具创建或安全升级的内容，并为每项保存内容哈希；因此全局卸载不会处理原先已存在、但内容刚好一致的用户文件。
 
 ### macOS/Linux
 
 先在质量工具仓库中执行验证和状态检查：
 
 ~~~bash
-cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
+cd /path/to/fullstack-quality-kit
 ./scripts/validate.sh
 ./scripts/status.sh \
-  /Users/vincent/Projects/AiCode/demo-project \
-  /Users/vincent/.codex
+  /path/to/demo-project \
+  ~/.codex
 ~~~
 
 交互式安装：
@@ -137,15 +137,21 @@ cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
 ./scripts/install-global.sh
 ~~~
 
-脚本会在修改前检查目标文件。目标全局目录中如已有不同内容，脚本会停止，不会覆盖；如果需要更新，先处理冲突，再重新执行。
+脚本会在修改前检查目标文件。安装清单记录且内容未被用户修改的旧版本可以安全升级；没有安装记录或已被用户修改的不同内容会触发冲突并停止。
+
+如果全局 `AGENTS.md` 已经包含等效联动规则，只安装 skill 和清单：
+
+~~~bash
+./scripts/install-global.sh --skip-agents
+~~~
 
 预期结果：
 
 ~~~text
-已备份全局规则：/Users/vincent/.codex/backups/...
-已处理 .../.codex/skills：新增若干文件，已存在且一致若干文件。
-已处理 .../.codex/checklists：新增若干文件，已存在且一致若干文件。
-全局安装完成：/Users/vincent/.codex
+已备份全局规则：<Codex 全局目录>/backups/...
+已处理 .../.codex/skills：新增若干文件，安全升级若干文件，已存在且一致若干文件。
+已处理 .../.codex/checklists：新增若干文件，安全升级若干文件，已存在且一致若干文件。
+全局安装完成：<Codex 全局目录>
 ~~~
 
 非交互执行只能在已经明确确认安装范围后使用：
@@ -154,21 +160,33 @@ cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
 ./scripts/install-global.sh --yes
 ~~~
 
+已有等效全局规则时：
+
+~~~bash
+./scripts/install-global.sh --yes --skip-agents
+~~~
+
 安装后检查：
 
 ~~~bash
 ./scripts/status.sh \
-  /Users/vincent/Projects/AiCode/demo-project \
-  /Users/vincent/.codex
+  /path/to/demo-project \
+  ~/.codex
 ~~~
 
 全局部分应显示：
 
 ~~~text
-已安装且一致：/Users/vincent/.codex/skills/fullstack-review
-已安装且一致：/Users/vincent/.codex/checklists/fullstack-quality-kit
+已安装且一致：<Codex 全局目录>/skills/fullstack-review
+已安装且一致：<Codex 全局目录>/checklists/fullstack-quality-kit
 全局安装清单 v2：一致 N 个，已修改 0 个，缺失 0 个，格式异常 0 个
 全局规则管理区块：已纳入安装清单
+~~~
+
+如果安装时使用了 `--skip-agents` 或 `-SkipAgents`，最后一行应改为：
+
+~~~text
+未合并全局规则管理区块
 ~~~
 
 重新打开 Codex 后，在任意业务项目中调用：
@@ -190,10 +208,17 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\status.ps1 -ProjectDir 'D:\Projects\demo-project' -CodexHomePath 'D:\Codex'
 ~~~
 
+已有等效全局规则时：
+
+~~~powershell
+.\scripts\install-global.ps1 -SkipAgents
+~~~
+
 非交互安装：
 
 ~~~powershell
 .\scripts\install-global.ps1 -Yes -CodexHomePath 'D:\Codex'
+.\scripts\install-global.ps1 -Yes -SkipAgents -CodexHomePath 'D:\Codex'
 ~~~
 
 ### Windows 命令提示符
@@ -202,6 +227,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 cd /d D:\Projects\fullstack-quality-kit
 scripts\validate.bat
 scripts\install-global.bat -Yes
+scripts\install-global.bat -Yes -SkipAgents
 scripts\status.bat "D:\Projects\demo-project" "D:\Codex"
 ~~~
 
@@ -264,21 +290,21 @@ $fullstack-review
 全局卸载只处理全局安装清单 v2 记录的文件和受标记管理的规则区块：
 
 ~~~bash
-cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
+cd /path/to/fullstack-quality-kit
 ./scripts/uninstall-global.sh
 ~~~
 
 预期结果：
 
 ~~~text
-已备份全局规则：/Users/vincent/.codex/backups/...
-全局卸载完成：/Users/vincent/.codex
+已备份全局规则：<Codex 全局目录>/backups/...
+全局卸载完成：<Codex 全局目录>
 ~~~
 
 如果某个已安装文件或规则区块在安装后被修改，脚本会保留它及其清单记录，并以非零状态结束：
 
 ~~~text
-全局卸载完成：/Users/vincent/.codex；已移除 N 个，保留已修改 M 个，缺失 0 个。
+全局卸载完成：<Codex 全局目录>；已移除 N 个，保留已修改 M 个，缺失 0 个。
 提示：存在已修改内容，卸载未完全完成；对应记录已保留。
 ~~~
 
@@ -296,7 +322,7 @@ cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
 
 - `validate` 脚本通过。
 - 项目级或全局目标显示“已安装且一致”。
-- 全局安装存在安装清单和规则管理区块。
+- 全局安装存在安装清单；未跳过全局规则时，规则管理区块已纳入安装清单；跳过规则时，原有全局 `AGENTS.md` 保持不变。
 - 重新打开 Codex 后可以调用 `$fullstack-review`。
 - 审查结果包含触发场景、证据、根因、影响、修复建议、验证结果、未覆盖项和已知风险。
 - 常规测试用例覆盖正常、失败、异常、边界、权限、重复执行、并发与幂等、回归等适用场景。

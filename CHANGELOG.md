@@ -1,5 +1,24 @@
 # 变更记录
 
+## v0.1.4 - 2026-10-15
+
+### 安装生命周期与全局规则
+
+- 全局安装支持根据安装清单 v2 的内容哈希安全升级未被用户修改的已管理文件和规则区块。
+- Bash 新增 `--skip-agents`，PowerShell 新增 `-SkipAgents`，用于已有等效全局规则时跳过规则合并。
+- 全局规则片段移除个人路径和仓库说明，补充工作流、清单路由与安全升级约束。
+
+### 验证与文档
+
+- 验证脚本增加关键规则、文档和全平台入口存在性检查，并区分 Windows 入口静态检查与真实运行验证。
+- 安装、使用、路由和迁移文档同步当前能力，移除公开文档中的个人路径与过期状态。
+
+### 正式发布
+
+- 创建正式版本标签 `v0.1.4`。
+- 本版本基于 `v0.1.3`，补充全局安全升级、规则合并跳过参数、确认后状态复核和公开文档验证。
+- macOS/Linux 安装生命周期已在隔离目录完成验证；真实 Windows 主机上的 PowerShell 闭环验证仍待执行。
+
 ## v0.1.3 - 2026-10-15
 
 ### 最小架构改进
@@ -34,7 +53,7 @@
 
 ### 第 9 步阶段性进展
 
-- 已在 `/Users/vincent/Projects/AiCode/devops/devops-platform` 完成项目级安装。
+- 已在一个实际业务项目中完成项目级安装。
 - 8 个 skill 和 30 个清单已安装且内容一致。
 - 工具调用验收、全局安装、切换和旧目录清理仍待执行。
 - 上次调用测试超出只读工具验收范围，已停止，不作为通过结果。
@@ -99,7 +118,7 @@
 - 将 backend/mysql-review 拆分为 backend/database-review 和 backend/data-access-review。
 - database-review 覆盖 MySQL、PostgreSQL、Oracle、SQL Server、SQLite 等数据库引擎、表结构、SQL、索引、事务、锁、迁移和回滚。
 - data-access-review 覆盖 MyBatis、JPA/Hibernate、JDBC、Mapper、Repository、ORM 和查询构建器的数据访问实现。
-- 同步更新仓库内 skill 与本地源 skill：`/Users/vincent/Projects/AiCode/Codex/skills/fullstack-review/`。
+- 同步更新仓库内 skill 与本地源 skill。
 - 删除旧 mysql-review skill 文件；未修改 25 个领域子清单正文。
 
 ### 第 4 步设计修正：拆分数据库与数据访问代码审查清单

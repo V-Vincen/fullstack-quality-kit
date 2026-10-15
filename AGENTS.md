@@ -2,11 +2,11 @@
 
 ## 快速索引
 
-- .codex/skills/：项目级 skill ¹。
-- .codex/checklists/：项目级清单 ²。
-- rules/：可合并到用户全局规则的规则片段。
-- scripts/：安装、验证、升级和回滚脚本。
-- docs/：仓库结构、安装方式、使用说明和 Markdown 排版规范。
+- `.codex/skills/`：项目级 skill ¹。
+- `.codex/checklists/`：项目级清单 ²。
+- `rules/`：可合并到用户全局规则的规则片段。
+- `scripts/`：安装与安全升级、状态、验证和全局卸载脚本。
+- `docs/`：仓库结构、安装方式、使用说明和 Markdown 排版规范。
 
 ## 仓库目标
 
@@ -14,17 +14,17 @@
 
 ## 源文件职责
 
-- .codex/skills/ 是项目级 skill 的唯一维护入口。
-- .codex/checklists/ 是项目级清单的唯一维护入口。
-- rules/global-agents.block.md 只保存可复用的全局规则管理区块。
+- `.codex/skills/` 是项目级 skill 的唯一维护入口。
+- `.codex/checklists/` 是项目级清单的唯一维护入口。
+- `rules/global-agents.block.md` 只保存可直接合并的全局规则管理区块，不包含个人路径或仓库说明。
 - 不把个人完整的全局 AGENTS.md 复制进本仓库。
 - 不把具体业务项目的 AGENTS.md、配置、账号或数据复制进本仓库。
 
 ## 清单路径解析
 
-- CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/。
-- 当前项目不存在对应清单时，再解析为 ~/.codex/checklists/fullstack-quality-kit/。
-- CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+- `CHECKLIST_ROOT` 先解析为当前项目的 `.codex/checklists/`。
+- 当前项目不存在对应清单时，再解析为 `~/.codex/checklists/fullstack-quality-kit/`。
+- `CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。
 - 两个位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
 
 ## 修改规则

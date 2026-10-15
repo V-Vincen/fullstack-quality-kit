@@ -9,10 +9,11 @@ SOURCE_CHECKLISTS="$REPO_ROOT/.codex/checklists"
 RULE_SOURCE="$REPO_ROOT/rules/global-agents.block.md"
 
 yes_flag=0
+skip_agents=0
 codex_home_path="${CODEX_HOME:-$HOME/.codex}"
 
 usage() {
-  echo "用法：$0 [--yes] [Codex 全局目录]"
+  echo "用法：$0 [--yes] [--skip-agents] [Codex 全局目录]"
   echo "默认目录：${CODEX_HOME:-$HOME/.codex}"
 }
 
@@ -20,6 +21,10 @@ while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --yes)
       yes_flag=1
+      shift
+      ;;
+    --skip-agents)
+      skip_agents=1
       shift
       ;;
     -h|--help)
@@ -243,20 +248,63 @@ upsert_manifest_record() {
   mv "$manifest_temp" "$MANIFEST"
 }
 
+manifest_record_hash() {
+  local kind="$1"
+  local managed_path="$2"
+  [[ -f "$MANIFEST" ]] || return 1
+  [[ "$(sed -n '1p' "$MANIFEST")" == "$MANIFEST_HEADER" ]] || return 1
+  awk -F '\t' -v kind="$kind" -v path="$managed_path" '
+    $1 == kind && $2 == path {
+      print tolower($3)
+      found=1
+      exit
+    }
+    END { if (!found) exit 1 }
+  ' "$MANIFEST"
+}
+
 preflight_tree() {
   local source_dir="$1"
   local target_dir="$2"
-  local source_file relative_path target_file
+  local source_file relative_path target_file recorded_hash current_hash
   while IFS= read -r -d '' source_file; do
     relative_path="${source_file#"$source_dir"/}"
     target_file="$target_dir/$relative_path"
     if [[ -e "$target_file" ]]; then
-      if [[ ! -f "$target_file" ]] || ! cmp -s "$source_file" "$target_file"; then
+      if [[ ! -f "$target_file" ]]; then
+        echo "冲突：目标文件已存在且内容不同：$target_file" >&2
+        return 1
+      fi
+      if cmp -s "$source_file" "$target_file"; then
+        continue
+      fi
+      recorded_hash="$(manifest_record_hash file "$target_file" 2>/dev/null || true)"
+      current_hash="$(file_sha256 "$target_file")"
+      if [[ -z "$recorded_hash" || "$current_hash" != "$recorded_hash" ]]; then
         echo "冲突：目标文件已存在且内容不同：$target_file" >&2
         return 1
       fi
     fi
   done < <(find "$source_dir" -type f ! -name '.DS_Store' -print0)
+}
+
+replace_managed_block() {
+  local source_file="$1"
+  local replacement_file="$2"
+  local output_file="$3"
+  awk -v start="$MARKER_START" -v end="$MARKER_END" -v replacement="$replacement_file" '
+    $0 == start {
+      while ((getline line < replacement) > 0) print line
+      close(replacement)
+      inside=1
+      next
+    }
+    inside && $0 == end {
+      inside=0
+      next
+    }
+    !inside { print }
+  ' "$source_file" > "$output_file"
 }
 
 require_source
@@ -290,28 +338,39 @@ fi
 preflight_tree "$SOURCE_SKILL_ROOT" "$TARGET_SKILLS"
 preflight_tree "$SOURCE_CHECKLISTS" "$TARGET_CHECKLISTS"
 
-agents_needs_change=0
-if [[ -e "$GLOBAL_AGENTS" ]]; then
-  [[ -f "$GLOBAL_AGENTS" ]] || { echo "失败：全局 AGENTS.md 不是普通文件。" >&2; exit 1; }
-  if grep -qF "$MARKER_START" "$GLOBAL_AGENTS"; then
-    current_block="$(mktemp)"
-    if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
+agents_write_mode='none'
+agents_record_needs_update=0
+if [[ "$skip_agents" -eq 0 ]]; then
+  if [[ -e "$GLOBAL_AGENTS" ]]; then
+    [[ -f "$GLOBAL_AGENTS" ]] || { echo "失败：全局 AGENTS.md 不是普通文件。" >&2; exit 1; }
+    if grep -qF "$MARKER_START" "$GLOBAL_AGENTS" || grep -qF "$MARKER_END" "$GLOBAL_AGENTS"; then
+      current_block="$(mktemp)"
+      if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
+        rm -f "$current_block"
+        echo "失败：全局 AGENTS.md 的管理区块不完整。" >&2
+        exit 1
+      fi
+      desired_hash="$(block_sha256 "$desired_block")"
+      current_hash="$(block_sha256 "$current_block")"
+      recorded_hash="$(manifest_record_hash agents-block "$GLOBAL_AGENTS" 2>/dev/null || true)"
       rm -f "$current_block"
-      echo "失败：全局 AGENTS.md 的管理区块不完整。" >&2
-      exit 1
+      if [[ "$current_hash" == "$desired_hash" ]]; then
+        if [[ -n "$recorded_hash" && "$recorded_hash" != "$current_hash" ]]; then
+          agents_record_needs_update=1
+        fi
+      elif [[ -n "$recorded_hash" && "$current_hash" == "$recorded_hash" ]]; then
+        agents_write_mode='replace'
+      else
+        echo "冲突：全局 AGENTS.md 已有不同的 fullstack-quality-kit 管理区块。" >&2
+        exit 1
+      fi
+    else
+      [[ -w "$GLOBAL_AGENTS" ]] || { echo "失败：无法写入全局 AGENTS.md。" >&2; exit 1; }
+      agents_write_mode='append'
     fi
-    if [[ "$(block_sha256 "$desired_block")" != "$(block_sha256 "$current_block")" ]]; then
-      rm -f "$current_block"
-      echo "冲突：全局 AGENTS.md 已有不同的 fullstack-quality-kit 管理区块。" >&2
-      exit 1
-    fi
-    rm -f "$current_block"
   else
-    [[ -w "$GLOBAL_AGENTS" ]] || { echo "失败：无法写入全局 AGENTS.md。" >&2; exit 1; }
-    agents_needs_change=1
+    agents_write_mode='create'
   fi
-else
-  agents_needs_change=1
 fi
 
 if [[ "$yes_flag" -ne 1 ]]; then
@@ -319,13 +378,76 @@ if [[ "$yes_flag" -ne 1 ]]; then
     echo "失败：非交互环境必须使用 --yes。" >&2
     exit 2
   fi
-  printf '将安装到 %s，并可能更新 %s。继续？ [y/N] ' "$codex_home_path" "$GLOBAL_AGENTS" > /dev/tty
+  if [[ "$skip_agents" -eq 1 ]]; then
+    printf '将安装到 %s，并跳过全局 AGENTS.md。继续？ [y/N] ' "$codex_home_path" > /dev/tty
+  else
+    printf '将安装到 %s，并可能更新 %s。继续？ [y/N] ' "$codex_home_path" "$GLOBAL_AGENTS" > /dev/tty
+  fi
   read -r answer < /dev/tty
   [[ "$answer" == 'y' || "$answer" == 'Y' ]] || { echo '已取消。'; exit 0; }
 fi
 
+verify_agents_write_precondition() {
+  local current_block recorded_hash current_hash desired_hash
+  [[ "$skip_agents" -eq 0 ]] || return 0
+  case "$agents_write_mode" in
+    none)
+      [[ -f "$GLOBAL_AGENTS" ]] || { echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2; return 1; }
+      current_block="$(mktemp)"
+      if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
+        rm -f "$current_block"
+        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        return 1
+      fi
+      current_hash="$(block_sha256 "$current_block")"
+      desired_hash="$(block_sha256 "$desired_block")"
+      rm -f "$current_block"
+      [[ "$current_hash" == "$desired_hash" ]] || {
+        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        return 1
+      }
+      ;;
+    append)
+      [[ -f "$GLOBAL_AGENTS" && -w "$GLOBAL_AGENTS" ]] || {
+        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        return 1
+      }
+      if grep -qF "$MARKER_START" "$GLOBAL_AGENTS" || grep -qF "$MARKER_END" "$GLOBAL_AGENTS"; then
+        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        return 1
+      fi
+      ;;
+    replace)
+      [[ -f "$GLOBAL_AGENTS" ]] || { echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2; return 1; }
+      current_block="$(mktemp)"
+      if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
+        rm -f "$current_block"
+        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        return 1
+      fi
+      recorded_hash="$(manifest_record_hash agents-block "$GLOBAL_AGENTS" 2>/dev/null || true)"
+      current_hash="$(block_sha256 "$current_block")"
+      rm -f "$current_block"
+      [[ -n "$recorded_hash" && "$current_hash" == "$recorded_hash" ]] || {
+        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        return 1
+      }
+      ;;
+    create)
+      [[ ! -e "$GLOBAL_AGENTS" ]] || {
+        echo '冲突：全局 AGENTS.md 在确认后已创建。' >&2
+        return 1
+      }
+      ;;
+    *)
+      echo "失败：未知的全局规则写入模式：$agents_write_mode" >&2
+      return 1
+      ;;
+  esac
+}
+
 backup_global_agents() {
-  [[ "$agents_needs_change" -eq 1 && -f "$GLOBAL_AGENTS" ]] || return 0
+  [[ "$agents_write_mode" != 'none' && "$agents_write_mode" != 'create' && -f "$GLOBAL_AGENTS" ]] || return 0
   backup_dir="$codex_home_path/backups"
   timestamp="$(date '+%Y%m%d-%H%M%S')"
   backup_path="$backup_dir/fullstack-quality-kit--AGENTS.md--$timestamp-before-global-install.bak"
@@ -339,14 +461,31 @@ copy_tree() {
   local source_dir="$1"
   local target_dir="$2"
   local source_name="$3"
-  local source_file relative_path target_file
+  local source_file relative_path target_file recorded_hash current_hash
   local copied=0
+  local updated=0
   local skipped=0
   while IFS= read -r -d '' source_file; do
     relative_path="${source_file#"$source_dir"/}"
     target_file="$target_dir/$relative_path"
     if [[ -e "$target_file" ]]; then
-      skipped=$((skipped + 1))
+      if cmp -s "$source_file" "$target_file"; then
+        skipped=$((skipped + 1))
+        recorded_hash="$(manifest_record_hash file "$target_file" 2>/dev/null || true)"
+        if [[ -n "$recorded_hash" && "$recorded_hash" != "$(file_sha256 "$target_file")" ]]; then
+          printf '%s\t%s\n' "$source_name" "$relative_path" >> "$created_files"
+        fi
+        continue
+      fi
+      recorded_hash="$(manifest_record_hash file "$target_file" 2>/dev/null || true)"
+      current_hash="$(file_sha256 "$target_file")"
+      if [[ -z "$recorded_hash" || "$current_hash" != "$recorded_hash" ]]; then
+        echo "失败：目标文件在预检后发生变化：$target_file" >&2
+        exit 1
+      fi
+      cp -p "$source_file" "$target_file"
+      printf '%s\t%s\n' "$source_name" "$relative_path" >> "$created_files"
+      updated=$((updated + 1))
       continue
     fi
     mkdir -p "$(dirname "$target_file")"
@@ -354,9 +493,10 @@ copy_tree() {
     printf '%s\t%s\n' "$source_name" "$relative_path" >> "$created_files"
     copied=$((copied + 1))
   done < <(find "$source_dir" -type f ! -name '.DS_Store' -print0)
-  echo "已处理 ${source_dir}：新增 $copied 个，已存在且一致 $skipped 个。"
+  echo "已处理 ${source_dir}：新增 $copied 个，安全升级 $updated 个，已存在且一致 $skipped 个。"
 }
 
+verify_agents_write_precondition
 backup_global_agents
 if [[ "$legacy_manifest_upgrade" -eq 1 ]]; then
   mv "$legacy_upgrade_manifest" "$MANIFEST"
@@ -367,19 +507,23 @@ mkdir -p "$codex_home_path" "$TARGET_SKILLS" "$TARGET_CHECKLISTS"
 copy_tree "$SOURCE_SKILL_ROOT" "$TARGET_SKILLS" skills
 copy_tree "$SOURCE_CHECKLISTS" "$TARGET_CHECKLISTS" checklists
 
-if [[ "$agents_needs_change" -eq 1 ]]; then
-  if [[ -f "$GLOBAL_AGENTS" ]]; then
+if [[ "$agents_write_mode" != 'none' ]]; then
+  if [[ "$agents_write_mode" == 'append' ]]; then
     agents_temp="$(mktemp)"
     cp -p "$GLOBAL_AGENTS" "$agents_temp"
     printf '\n' >> "$agents_temp"
     cat "$desired_block" >> "$agents_temp"
     mv "$agents_temp" "$GLOBAL_AGENTS"
-  else
+  elif [[ "$agents_write_mode" == 'replace' ]]; then
+    agents_temp="$(mktemp)"
+    replace_managed_block "$GLOBAL_AGENTS" "$desired_block" "$agents_temp"
+    mv "$agents_temp" "$GLOBAL_AGENTS"
+  elif [[ "$agents_write_mode" == 'create' ]]; then
     cp -p "$desired_block" "$GLOBAL_AGENTS"
   fi
 fi
 
-if [[ -s "$created_files" || "$agents_needs_change" -eq 1 ]]; then
+if [[ -s "$created_files" || "$agents_write_mode" != 'none' || "$agents_record_needs_update" -eq 1 ]]; then
   ensure_v2_manifest
   while IFS=$'\t' read -r source_name relative_path; do
     case "$source_name" in
@@ -392,9 +536,13 @@ if [[ -s "$created_files" || "$agents_needs_change" -eq 1 ]]; then
     esac
     upsert_manifest_record file "$target_file" "$(file_sha256 "$target_file")"
   done < "$created_files"
-  if [[ "$agents_needs_change" -eq 1 ]]; then
+  if [[ "$agents_write_mode" != 'none' || "$agents_record_needs_update" -eq 1 ]]; then
     upsert_manifest_record agents-block "$GLOBAL_AGENTS" "$(block_sha256 "$desired_block")"
   fi
+fi
+
+if [[ "$skip_agents" -eq 1 ]]; then
+  echo '已按参数跳过全局 AGENTS.md 规则区块。'
 fi
 
 echo "全局安装完成：$codex_home_path"
