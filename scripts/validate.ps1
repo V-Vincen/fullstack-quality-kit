@@ -11,6 +11,7 @@ $SkillRoot = Join-Path $RepoRoot '.codex\skills\fullstack-review'
 $WorkflowRoot = Join-Path $SkillRoot 'workflows'
 $MainSkillFile = Join-Path $SkillRoot 'SKILL.md'
 $ChecklistRoot = Join-Path $RepoRoot '.codex\checklists'
+$RulesFile = Join-Path $ScriptDir 'validation-rules.conf'
 $ErrorCount = 0
 
 function Show-Usage {
@@ -30,6 +31,51 @@ function Require-File {
     }
 }
 
+function Get-ValidationRules {
+    param([string]$Path)
+
+    $KnownKeys = @(
+        'EXPECTED_SKILL_COUNT',
+        'EXPECTED_WORKFLOW_COUNT',
+        'EXPECTED_ROOT_CHECKLIST_COUNT',
+        'EXPECTED_DOMAIN_CHECKLIST_COUNT'
+    )
+    $Rules = @{}
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $Rules
+    }
+
+    foreach ($RawLine in Get-Content -LiteralPath $Path) {
+        $Line = $RawLine.Trim()
+        if ([string]::IsNullOrWhiteSpace($Line) -or $Line.StartsWith('#')) {
+            continue
+        }
+        if ($Line -notmatch '^([A-Z_]+)=([1-9][0-9]*)$') {
+            Fail-Validation ('验证规则格式无效：{0}' -f $RawLine)
+            continue
+        }
+        $Key = $Matches[1]
+        $Value = $Matches[2]
+        if ($KnownKeys -notcontains $Key) {
+            Fail-Validation ('验证规则包含未知项：{0}' -f $Key)
+            continue
+        }
+        if ($Rules.ContainsKey($Key)) {
+            Fail-Validation ('验证规则重复：{0}' -f $Key)
+            continue
+        }
+        $Rules[$Key] = [int]$Value
+    }
+
+    foreach ($Key in $KnownKeys) {
+        if (-not $Rules.ContainsKey($Key)) {
+            Fail-Validation ('验证规则缺少：{0}' -f $Key)
+            $Rules[$Key] = 0
+        }
+    }
+    return $Rules
+}
+
 if ($Help) {
     Show-Usage
     exit 0
@@ -39,11 +85,18 @@ if ($Help) {
     (Join-Path $RepoRoot 'AGENTS.md'),
     (Join-Path $RepoRoot 'README.md'),
     $MainSkillFile,
+    $RulesFile,
     (Join-Path $ChecklistRoot 'CODE_REVIEW_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'BUSINESS_TEST_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'DB_CHANGE_CHECKLIST.md'),
     (Join-Path $ChecklistRoot 'EXTERNAL_API_DOC_CHECKLIST.md')
 ) | ForEach-Object { Require-File $_ }
+
+$ValidationRules = Get-ValidationRules $RulesFile
+$ExpectedSkillCount = $ValidationRules['EXPECTED_SKILL_COUNT']
+$ExpectedWorkflowCount = $ValidationRules['EXPECTED_WORKFLOW_COUNT']
+$ExpectedRootChecklistCount = $ValidationRules['EXPECTED_ROOT_CHECKLIST_COUNT']
+$ExpectedDomainChecklistCount = $ValidationRules['EXPECTED_DOMAIN_CHECKLIST_COUNT']
 
 $WorkflowFiles = @(
     'preflight-grill.md',
@@ -61,15 +114,14 @@ foreach ($WorkflowFileName in $WorkflowFiles) {
     }
 }
 
-$ExpectedWorkflowCount = 5
 $WorkflowCount = @(Get-ChildItem -LiteralPath $WorkflowRoot -File -Filter '*.md').Count
 if ($WorkflowCount -ne $ExpectedWorkflowCount) {
     Fail-Validation ('工作流数量应为 {0}，实际为 {1}' -f $ExpectedWorkflowCount, $WorkflowCount)
 }
 
 $SkillFiles = @(Get-ChildItem -LiteralPath $SkillRoot -File -Recurse -Filter 'SKILL.md' | Sort-Object FullName)
-if ($SkillFiles.Count -ne 8) {
-    Fail-Validation ('skill 数量应为 8，实际为 {0}' -f $SkillFiles.Count)
+if ($SkillFiles.Count -ne $ExpectedSkillCount) {
+    Fail-Validation ('skill 数量应为 {0}，实际为 {1}' -f $ExpectedSkillCount, $SkillFiles.Count)
 }
 
 $SkillNames = New-Object System.Collections.Generic.List[string]
@@ -124,11 +176,11 @@ if ($DuplicateNames.Count -gt 0) {
 $TotalChecklists = @(Get-ChildItem -LiteralPath $ChecklistRoot -File -Recurse -Filter '*.md').Count
 $RootChecklists = @(Get-ChildItem -LiteralPath $ChecklistRoot -File -Filter '*.md').Count
 $DomainChecklists = $TotalChecklists - $RootChecklists
-if ($RootChecklists -ne 4) {
-    Fail-Validation ('总清单数量应为 4，实际为 {0}' -f $RootChecklists)
+if ($RootChecklists -ne $ExpectedRootChecklistCount) {
+    Fail-Validation ('总清单数量应为 {0}，实际为 {1}' -f $ExpectedRootChecklistCount, $RootChecklists)
 }
-if ($DomainChecklists -ne 27) {
-    Fail-Validation ('领域子清单数量应为 27，实际为 {0}' -f $DomainChecklists)
+if ($DomainChecklists -ne $ExpectedDomainChecklistCount) {
+    Fail-Validation ('领域子清单数量应为 {0}，实际为 {1}' -f $ExpectedDomainChecklistCount, $DomainChecklists)
 }
 
 $UserJourneyChecklist = Join-Path $ChecklistRoot 'business-test\user-journey-acceptance.md'
@@ -196,4 +248,4 @@ if ($ErrorCount -ne 0) {
     exit 1
 }
 
-Write-Output '验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Windows 入口和脚本语法均正常。'
+Write-Output ('验证通过：{0} 个 skill、{1} 个工作流、{2} 个总清单、{3} 个领域子清单、工作流引用、活动引用、Windows 入口和脚本语法均正常。' -f $ExpectedSkillCount, $ExpectedWorkflowCount, $ExpectedRootChecklistCount, $ExpectedDomainChecklistCount)

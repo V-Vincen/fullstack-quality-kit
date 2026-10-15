@@ -11,13 +11,15 @@ description: Review full-stack applications and generate standard test cases by 
 
 fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `AGENTS.md` 的授权、范围、备份、验证和交付规则，再根据用户任务决定是否读取工作流；工作流只补充执行步骤，不替代现有总清单、领域子清单或专业子 skill。
 
-按以下条件读取当前任务相关的工作流，不得默认加载全部工作流：
+按以下路由表读取当前任务相关的工作流，不得默认加载全部工作流：
 
-- 需求不清、范围不明或验收标准不清：读取 `workflows/preflight-grill.md`。
-- 新增 Skill、清单、路由或进行架构调整：读取 `workflows/design-context.md`。
-- 修改 Skill、清单、路由或脚本：读取 `workflows/tdd-verification.md`。
-- 用户要求画图，或 Skill、清单、脚本与状态流转关系复杂：读取 `workflows/visualization.md`。
-- 用户要求用户流程验收、上线前体验验收，或本次审查覆盖核心用户流程：读取 `workflows/user-journey-acceptance.md`。
+| 触发条件 | 工作流文件 | 完成后的处理 |
+|---|---|---|
+| 需求、范围或验收标准不清 | `workflows/preflight-grill.md` | 返回主流程继续路由，未回答内容标记为待确认。 |
+| 新增 Skill、清单、路由或调整结构 | `workflows/design-context.md` | 先输出设计方案，获得确认后再修改。 |
+| 修改 Skill、清单、路由或脚本 | `workflows/tdd-verification.md` | 对已授权修改执行行为和回归验证。 |
+| 用户要求画图或关系复杂 | `workflows/visualization.md` | 基于真实文件和已验证路由输出 Mermaid。 |
+| 用户要求用户流程或上线前体验验收，或审查覆盖核心用户流程 | `workflows/user-journey-acceptance.md` | 从真实用户入口验收后，返回主流程继续路由。 |
 
 工作流之间可以按实际任务组合。优先澄清不明确的需求；涉及新增或结构调整时先形成可确认的设计；写入后执行验证；图形化说明可在已有真实文件和路由证据的基础上补充。
 

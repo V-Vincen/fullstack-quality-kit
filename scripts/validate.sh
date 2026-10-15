@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_ROOT="$REPO_ROOT/.codex/skills/fullstack-review"
 WORKFLOW_ROOT="$SKILL_ROOT/workflows"
 CHECKLIST_ROOT="$REPO_ROOT/.codex/checklists"
+RULES_FILE="$SCRIPT_DIR/validation-rules.conf"
 
 error_count=0
 
@@ -20,9 +21,74 @@ require_file() {
   fi
 }
 
+load_validation_rules() {
+  local line key value
+  expected_skill_count=""
+  expected_workflow_count=""
+  expected_root_checklist_count=""
+  expected_domain_checklist_count=""
+
+  if [[ ! -f "$RULES_FILE" ]]; then
+    fail "缺少文件：$RULES_FILE"
+    return
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ -z "$line" || "${line#\#}" != "$line" ]] && continue
+    if [[ ! "$line" =~ ^([A-Z_]+)=([1-9][0-9]*)$ ]]; then
+      fail "验证规则格式无效：$line"
+      continue
+    fi
+    key="${BASH_REMATCH[1]}"
+    value="${BASH_REMATCH[2]}"
+    case "$key" in
+      EXPECTED_SKILL_COUNT)
+        if [[ -n "$expected_skill_count" ]]; then
+          fail "验证规则重复：$key"
+        else
+          expected_skill_count="$value"
+        fi
+        ;;
+      EXPECTED_WORKFLOW_COUNT)
+        if [[ -n "$expected_workflow_count" ]]; then
+          fail "验证规则重复：$key"
+        else
+          expected_workflow_count="$value"
+        fi
+        ;;
+      EXPECTED_ROOT_CHECKLIST_COUNT)
+        if [[ -n "$expected_root_checklist_count" ]]; then
+          fail "验证规则重复：$key"
+        else
+          expected_root_checklist_count="$value"
+        fi
+        ;;
+      EXPECTED_DOMAIN_CHECKLIST_COUNT)
+        if [[ -n "$expected_domain_checklist_count" ]]; then
+          fail "验证规则重复：$key"
+        else
+          expected_domain_checklist_count="$value"
+        fi
+        ;;
+      *)
+        fail "验证规则包含未知项：$key"
+        ;;
+    esac
+  done < "$RULES_FILE"
+
+  [[ -n "$expected_skill_count" ]] || fail '验证规则缺少：EXPECTED_SKILL_COUNT'
+  [[ -n "$expected_workflow_count" ]] || fail '验证规则缺少：EXPECTED_WORKFLOW_COUNT'
+  [[ -n "$expected_root_checklist_count" ]] || fail '验证规则缺少：EXPECTED_ROOT_CHECKLIST_COUNT'
+  [[ -n "$expected_domain_checklist_count" ]] || fail '验证规则缺少：EXPECTED_DOMAIN_CHECKLIST_COUNT'
+}
+
 require_file "$REPO_ROOT/AGENTS.md"
 require_file "$REPO_ROOT/README.md"
 require_file "$SKILL_ROOT/SKILL.md"
+require_file "$RULES_FILE"
+
+load_validation_rules
 
 for workflow_name in \
   preflight-grill.md \
@@ -36,7 +102,6 @@ for workflow_name in \
   fi
 done
 
-expected_workflow_count=5
 workflow_count="$(find "$WORKFLOW_ROOT" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
 [[ "$workflow_count" -eq "$expected_workflow_count" ]] || fail "工作流数量应为 ${expected_workflow_count}，实际为 ${workflow_count}"
 
@@ -50,8 +115,8 @@ while IFS= read -r skill_file; do
   skill_files+=("$skill_file")
 done < <(find "$SKILL_ROOT" -type f -name 'SKILL.md' -print | sort)
 
-if [[ "${#skill_files[@]}" -ne 8 ]]; then
-  fail "skill 数量应为 8，实际为 ${#skill_files[@]}"
+if [[ "${#skill_files[@]}" -ne "$expected_skill_count" ]]; then
+  fail "skill 数量应为 ${expected_skill_count}，实际为 ${#skill_files[@]}"
 fi
 
 skill_names_file="$(mktemp)"
@@ -82,8 +147,8 @@ duplicate_names="$(sort "$skill_names_file" | uniq -d)"
 total_checklists="$(find "$CHECKLIST_ROOT" -type f -name '*.md' | wc -l | tr -d ' ')"
 root_checklists="$(find "$CHECKLIST_ROOT" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
 domain_checklists=$((total_checklists - root_checklists))
-[[ "$root_checklists" -eq 4 ]] || fail "总清单数量应为 4，实际为 $root_checklists"
-[[ "$domain_checklists" -eq 27 ]] || fail "领域子清单数量应为 27，实际为 $domain_checklists"
+[[ "$root_checklists" -eq "$expected_root_checklist_count" ]] || fail "总清单数量应为 ${expected_root_checklist_count}，实际为 $root_checklists"
+[[ "$domain_checklists" -eq "$expected_domain_checklist_count" ]] || fail "领域子清单数量应为 ${expected_domain_checklist_count}，实际为 $domain_checklists"
 
 user_journey_checklist="$CHECKLIST_ROOT/business-test/user-journey-acceptance.md"
 require_file "$user_journey_checklist"
@@ -136,4 +201,4 @@ if [[ "$error_count" -ne 0 ]]; then
   exit 1
 fi
 
-echo "验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。"
+echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、工作流引用、活动引用、Unix 入口和 Windows 入口均正常。"

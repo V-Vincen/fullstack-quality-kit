@@ -14,11 +14,11 @@
 
 | 脚本 | 作用 | 执行后的预期结果 |
 |---|---|---|
-| `validate.sh`、`validate.ps1`、`validate.bat` | 验证 skill、工作流、清单、路由、脚本入口和旧引用 | 输出 8 个 skill、5 个工作流、4 个总清单、27 个领域子清单验证通过 |
+| `validate.sh`、`validate.ps1`、`validate.bat` | 验证 skill、工作流、清单、路由、脚本入口和旧引用 | 按 `scripts/validation-rules.conf` 的统一数量输出验证通过 |
 | `install-project.sh`、`install-project.ps1`、`install-project.bat` | 将 skill 和清单复制到业务项目 `.codex/` | 输出项目级安装完成；一致文件跳过，冲突文件停止 |
-| `install-global.sh`、`install-global.ps1`、`install-global.bat` | 安装到全局 Codex 目录，并合并受标记管理的全局规则区块 | 输出全局安装完成；备份全局规则并生成安装清单 |
-| `uninstall-global.sh`、`uninstall-global.ps1`、`uninstall-global.bat` | 卸载全局安装清单中的文件和受管理规则区块 | 输出全局卸载完成；卸载前备份全局规则 |
-| `status.sh`、`status.ps1`、`status.bat` | 对比源文件、项目级安装和全局安装 | 输出已安装且一致、缺失文件、冲突文件、安装清单和规则区块状态 |
+| `install-global.sh`、`install-global.ps1`、`install-global.bat` | 安装到全局 Codex 目录，并合并受标记管理的全局规则区块 | 输出全局安装完成；以安装清单 v2 记录本次新增内容及其内容指纹 |
+| `uninstall-global.sh`、`uninstall-global.ps1`、`uninstall-global.bat` | 卸载全局安装清单中的文件和受管理规则区块 | 仅移除内容指纹仍一致的项目；已修改内容保留并提示未完全卸载 |
+| `status.sh`、`status.ps1`、`status.bat` | 对比源文件、项目级安装和全局安装 | 分别输出与当前源的差异，以及安装清单 v2 的一致、已修改、缺失和格式异常状态 |
 
 其中，`.sh` 适用于 macOS/Linux，`.ps1` 适用于 Windows PowerShell，`.bat` 是 Windows 命令提示符入口。批处理文件只负责转发到对应的 PowerShell 脚本。
 
@@ -117,6 +117,8 @@ $fullstack-review
 
 全局安装适合让多个业务项目共用同一套 skill 和清单。默认目标是 `~/.codex/`，不会覆盖用户完整的全局 `AGENTS.md`，只合并 `rules/global-agents.block.md` 管理的规则区块。
 
+安装后的 `~/.codex/skills/fullstack-review/` 直接包含 `SKILL.md`、子 skill 和工作流。安装清单 v2 只记录本次新增文件和本次新增的规则区块，并为每项保存内容指纹；因此全局卸载不会处理原先已存在、但内容刚好一致的用户文件。
+
 ### macOS/Linux
 
 先在质量工具仓库中执行验证和状态检查：
@@ -165,8 +167,8 @@ cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
 ~~~text
 已安装且一致：/Users/vincent/.codex/skills/fullstack-review
 已安装且一致：/Users/vincent/.codex/checklists/fullstack-quality-kit
-存在全局安装清单
-已合并全局规则管理区块
+全局安装清单 v2：一致 N 个，已修改 0 个，缺失 0 个，格式异常 0 个
+全局规则管理区块：已纳入安装清单
 ~~~
 
 重新打开 Codex 后，在任意业务项目中调用：
@@ -259,7 +261,7 @@ $fullstack-review
 
 ### 全局卸载
 
-全局卸载只处理全局安装清单记录的文件和受标记管理的规则区块：
+全局卸载只处理全局安装清单 v2 记录的文件和受标记管理的规则区块：
 
 ~~~bash
 cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
@@ -272,6 +274,15 @@ cd /Users/vincent/Projects/AiCode/fullstack-quality-kit
 已备份全局规则：/Users/vincent/.codex/backups/...
 全局卸载完成：/Users/vincent/.codex
 ~~~
+
+如果某个已安装文件或规则区块在安装后被修改，脚本会保留它及其清单记录，并以非零状态结束：
+
+~~~text
+全局卸载完成：/Users/vincent/.codex；已移除 N 个，保留已修改 M 个，缺失 0 个。
+提示：存在已修改内容，卸载未完全完成；对应记录已保留。
+~~~
+
+检测到旧版或无法核验的安装清单时，先重新执行一次全局安装，让脚本在内容仍一致的前提下安全升级为 v2；升级失败时应先人工确认文件归属，不要绕过脚本直接删除。
 
 项目级安装不使用全局卸载脚本。如需回滚项目级安装，应先检查业务项目 Git 状态，再由项目维护者恢复 `.codex/skills/` 和 `.codex/checklists/`。
 

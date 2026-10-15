@@ -36,6 +36,8 @@ fullstack-review
 
 fullstack-review 是工作流和专业子 skill 的唯一主入口。工作流只处理需求澄清、设计、验证或图形化等执行步骤；完成后必须返回主入口，再按实际技术范围选择专业子 skill。
 
+工作流文件、触发条件和完成后的处理以 [fullstack-review 主 skill](../.codex/skills/fullstack-review/SKILL.md) 中的路由表为准；本文不重复维护同一张表。
+
 ~~~text
 fullstack-review
     ↓ 命中条件时按需读取
@@ -45,14 +47,6 @@ fullstack-review
     ↓ 按技术范围路由
 专业子 skill
 ~~~
-
-| 触发条件 | 工作流文件 | 完成后的处理 |
-|---|---|---|
-| 需求、范围或验收标准不清 | `workflows/preflight-grill.md` | 返回主流程继续路由，未回答内容标记为待确认。 |
-| 新增 Skill、清单、路由或调整结构 | `workflows/design-context.md` | 先输出设计方案，获得确认后再修改。 |
-| 修改 Skill、清单、路由或脚本 | `workflows/tdd-verification.md` | 对已授权修改执行行为和回归验证。 |
-| 用户要求画图或关系复杂 | `workflows/visualization.md` | 基于真实文件和已验证路由输出 Mermaid。 |
-| 用户要求用户流程或上线前体验验收，或审查覆盖核心用户流程 | `workflows/user-journey-acceptance.md` | 从真实用户入口验收后，返回主流程继续路由。 |
 
 - 授权规则、总清单和领域子清单的门禁优先于工作流；工作流不得绕过或替代它们。
 - 只有满足触发条件时才读取对应工作流，普通代码审查不得无条件加载全部工作流。
