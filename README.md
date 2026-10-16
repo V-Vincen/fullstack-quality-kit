@@ -31,6 +31,7 @@ rules/
 scripts/
 docs/
 ├── checklist-routing.md
+├── execution-plan.md
 ├── installation.md
 ├── migration-map.md
 ├── markdown-style-guide.md
@@ -44,7 +45,7 @@ docs/
 1. 项目级安装：将本仓库内容安装到业务项目。
 2. 全局安装：将主 skill 和命名空间清单安装到用户全局目录。
 
-详细安装命令见 [安装说明](docs/installation.md)，使用方式见 [使用说明](docs/usage.md)，Markdown 排版规则见 [Markdown 排版规范](docs/markdown-style-guide.md)。
+完整建设与验收进度见 [执行计划](docs/execution-plan.md)，详细安装命令见 [安装说明](docs/installation.md)，使用方式见 [使用说明](docs/usage.md)，Markdown 排版规则见 [Markdown 排版规范](docs/markdown-style-guide.md)。
 
 ## 维护流程
 
