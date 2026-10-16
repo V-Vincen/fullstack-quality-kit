@@ -59,9 +59,11 @@ scripts\install-project.bat "D:\Projects\业务项目"
 
 - `~/.codex/skills/fullstack-review/`
 - `~/.codex/checklists/fullstack-quality-kit/`
-- 全局 `AGENTS.md` 中受标记管理的联动规则区块
+- 未使用跳过规则参数时，全局 `AGENTS.md` 中受标记管理的联动规则区块
 
 `~/.codex/skills/fullstack-review/` 直接包含主 `SKILL.md`、子 skill 和工作流，不会额外嵌套一层 `fullstack-review/` 目录。
+
+安装脚本会在清单命名空间中自动生成 `~/.codex/checklists/fullstack-quality-kit/.fullstack-quality-kit.manifest`。该文件不是独立安装目录，用于记录受管理文件及其内容哈希。
 
 ### macOS/Linux
 
@@ -111,6 +113,19 @@ scripts\install-project.bat "D:\Projects\业务项目"
 scripts\install-global.bat -Yes
 scripts\install-global.bat -Yes -SkipAgents
 ~~~
+
+### 已有根目录清单的迁移
+
+如果 `~/.codex/checklists/` 已经直接包含 4 个总清单和领域目录，不要把这些文件移动或复制到新的命名空间，也不要在安装后立即删除。推荐顺序如下：
+
+1. 比较原始清单与仓库当前清单，确认是否存在本机独有内容。
+2. 备份原始清单和全局 `AGENTS.md`。
+3. 将全局规则中的固定清单路径改为 `CHECKLIST_ROOT`，并补充项目级优先、全局命名空间兜底的解析规则。
+4. 全局规则已经具备等效联动内容时，使用 `--skip-agents` 或 `-SkipAgents` 安装 skill 和命名空间清单。
+5. 验证项目级优先路径、全局兜底路径、重复安装和安装清单状态。
+6. 保留原始根目录清单，完成一次安装后的真实项目审查；再次确认后才逐个清理旧副本。
+
+原始根目录清单不会被全局安装清单记录，全局卸载脚本也不会处理它们。清理时必须保留 `~/.codex/checklists/fullstack-quality-kit/`。
 
 脚本只合并 `rules/global-agents.block.md` 管理的规则区块，不覆盖用户完整的全局 `AGENTS.md`。`--skip-agents` 和 `-SkipAgents` 只跳过规则区块，不影响 skill 和清单安装。
 
