@@ -13,7 +13,19 @@
 
 ### 清单路径解析
 
-- `CHECKLIST_ROOT` 按以下顺序按目录解析，第一个包含对应总清单文件的位置生效；同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本：
+- `CHECKLIST_ROOT` 按当前宿主的顺序逐个目录解析，第一个包含对应总清单文件的位置生效；同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
+
+在 Codex 中：
+
+~~~text
+1. 当前项目/.codex/checklists/
+2. 当前项目/.claude/checklists/
+3. ~/.codex/checklists/fullstack-quality-kit/
+4. ~/.claude/checklists/fullstack-quality-kit/
+5. 都不存在：报告清单缺失，不得回退到其他项目目录
+~~~
+
+在 Claude Code 中：
 
 ~~~text
 1. 当前项目/.claude/checklists/

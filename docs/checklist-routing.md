@@ -1,20 +1,34 @@
 # 清单路由说明
 
-当前仓库包含 4 个总清单、27 个领域子清单和 5 个按需读取的工作流。数量由 `scripts/validation-rules.conf` 统一校验；工作流的具体路由以主 skill 为唯一来源。
+当前仓库包含 4 个总清单、27 个领域子清单和 3 个按需读取的用户工作流。数量由 `scripts/validation-rules.conf` 统一校验；工作流的具体路由以主 skill 为唯一来源。
 
 ## 路径解析
 
 `CHECKLIST_ROOT` 是清单根目录的逻辑标识，不是需要设置的环境变量。
 
-解析顺序固定为：
+Codex 的解析顺序为：
+
+~~~text
+当前项目/.codex/checklists/
+    ↓ 不存在对应总清单时
+当前项目/.claude/checklists/
+    ↓ 不存在对应总清单时
+~/.codex/checklists/fullstack-quality-kit/
+    ↓ 不存在对应总清单时
+~/.claude/checklists/fullstack-quality-kit/
+    ↓ 所有位置都不存在时
+报告清单缺失
+~~~
+
+Claude Code 的解析顺序为：
 
 ~~~text
 当前项目/.claude/checklists/
-    ↓ 不存在对应文件时
+    ↓ 不存在对应总清单时
 当前项目/.codex/checklists/
-    ↓ 不存在对应文件时
+    ↓ 不存在对应总清单时
 ~/.claude/checklists/fullstack-quality-kit/
-    ↓ 不存在对应文件时
+    ↓ 不存在对应总清单时
 ~/.codex/checklists/fullstack-quality-kit/
     ↓ 所有位置都不存在时
 报告清单缺失
@@ -40,7 +54,7 @@ fullstack-review
 
 ## 工作流路由
 
-fullstack-review 是工作流和专业子 skill 的唯一主入口。工作流只处理需求澄清、设计、验证或图形化等执行步骤；完成后必须返回主入口，再按实际技术范围选择专业子 skill。
+fullstack-review 是工作流和专业子 skill 的唯一主入口。3 个用户工作流分别处理需求澄清、图形化说明和用户流程验收；设计确认与修改后验证由 AGENTS.md 的维护工程规则约束，不再对应独立工作流文件。
 
 工作流文件、触发条件和完成后的处理以 [fullstack-review 主 skill](../skills/fullstack-review/SKILL.md) 中的路由表为准；本文不重复维护同一张表。
 

@@ -22,7 +22,9 @@
 
 ## 清单路径解析
 
-- 清单路径按以下顺序按目录解析：当前项目的 `.claude/checklists/`、当前项目的 `.codex/checklists/`、`~/.claude/checklists/fullstack-quality-kit/`、`~/.codex/checklists/fullstack-quality-kit/`。第一个包含对应总清单文件的位置生效，同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
+- Codex 按以下顺序解析清单目录：当前项目 `.codex/checklists/`、当前项目 `.claude/checklists/`、`~/.codex/checklists/fullstack-quality-kit/`、`~/.claude/checklists/fullstack-quality-kit/`。
+- Claude Code 按以下顺序解析清单目录：当前项目 `.claude/checklists/`、当前项目 `.codex/checklists/`、`~/.claude/checklists/fullstack-quality-kit/`、`~/.codex/checklists/fullstack-quality-kit/`。
+- 第一个包含对应总清单文件的位置生效，同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
 - `CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。
 - 所有候选位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
 - 完整说明以主 skill「清单联动」一节为准。

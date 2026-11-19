@@ -8,6 +8,10 @@ WORKFLOW_ROOT="$SKILL_ROOT/workflows"
 CHECKLIST_ROOT="$REPO_ROOT/checklists"
 RULES_FILE="$SCRIPT_DIR/validation-rules.conf"
 GLOBAL_RULE_BLOCK="$REPO_ROOT/rules/global-agents.block.md"
+LEGACY_PROJECT_MANIFEST_V015="$SCRIPT_DIR/project-legacy-v0.1.5.manifest"
+LEGACY_PROJECT_MANIFEST_V020="$SCRIPT_DIR/project-legacy-v0.2.0.manifest"
+LEGACY_PROJECT_MANIFEST_HEADER_V015='# fullstack-quality-kit legacy project manifest v0.1.5'
+LEGACY_PROJECT_MANIFEST_HEADER_V020='# fullstack-quality-kit legacy project manifest v0.2.0'
 
 error_count=0
 
@@ -28,6 +32,8 @@ load_validation_rules() {
   expected_workflow_count=""
   expected_root_checklist_count=""
   expected_domain_checklist_count=""
+  expected_legacy_project_old_record_count=""
+  expected_legacy_project_release_record_count=""
 
   if [[ ! -f "$RULES_FILE" ]]; then
     fail "缺少文件：$RULES_FILE"
@@ -72,6 +78,20 @@ load_validation_rules() {
           expected_domain_checklist_count="$value"
         fi
         ;;
+      EXPECTED_LEGACY_PROJECT_OLD_RECORD_COUNT)
+        if [[ -n "$expected_legacy_project_old_record_count" ]]; then
+          fail "验证规则重复：$key"
+        else
+          expected_legacy_project_old_record_count="$value"
+        fi
+        ;;
+      EXPECTED_LEGACY_PROJECT_RELEASE_RECORD_COUNT)
+        if [[ -n "$expected_legacy_project_release_record_count" ]]; then
+          fail "验证规则重复：$key"
+        else
+          expected_legacy_project_release_record_count="$value"
+        fi
+        ;;
       *)
         fail "验证规则包含未知项：$key"
         ;;
@@ -82,28 +102,27 @@ load_validation_rules() {
   [[ -n "$expected_workflow_count" ]] || fail '验证规则缺少：EXPECTED_WORKFLOW_COUNT'
   [[ -n "$expected_root_checklist_count" ]] || fail '验证规则缺少：EXPECTED_ROOT_CHECKLIST_COUNT'
   [[ -n "$expected_domain_checklist_count" ]] || fail '验证规则缺少：EXPECTED_DOMAIN_CHECKLIST_COUNT'
+  [[ -n "$expected_legacy_project_old_record_count" ]] || fail '验证规则缺少：EXPECTED_LEGACY_PROJECT_OLD_RECORD_COUNT'
+  [[ -n "$expected_legacy_project_release_record_count" ]] || fail '验证规则缺少：EXPECTED_LEGACY_PROJECT_RELEASE_RECORD_COUNT'
 }
 
 check_checklist_path_conflicts() {
-  local project_level="$REPO_ROOT/.claude/checklists"
-  local project_level_codex="$REPO_ROOT/.codex/checklists"
-  local global_level="${HOME}/.claude/checklists/fullstack-quality-kit"
-  local global_level_codex="${HOME}/.codex/checklists/fullstack-quality-kit"
-  local conflict_count=0
+  local candidate
+  local -a candidates=(
+    "$REPO_ROOT/.claude/checklists"
+    "$REPO_ROOT/.codex/checklists"
+    "${HOME}/.claude/checklists/fullstack-quality-kit"
+    "${HOME}/.codex/checklists/fullstack-quality-kit"
+  )
+  local -a available=()
 
-  # 检查是否同时存在多个候选路径
-  if [[ -d "$project_level/CODE_REVIEW_CHECKLIST.md" && -d "$project_level_codex/CODE_REVIEW_CHECKLIST.md" ]]; then
-    echo "警告：同时检测到 .claude/checklists 和 .codex/checklists，将按优先级使用 .claude/checklists" >&2
-    conflict_count=$((conflict_count + 1))
-  fi
-
-  if [[ -d "$project_level" && -d "$global_level" ]]; then
-    echo "警告：同时检测到项目级清单和全局清单，将按优先级使用项目级 .claude/checklists" >&2
-    conflict_count=$((conflict_count + 1))
-  fi
-
-  if [[ $conflict_count -gt 0 ]]; then
-    echo "清单路径优先级：项目 .claude/ > 项目 .codex/ > 全局 ~/.claude/ > 全局 ~/.codex/" >&2
+  for candidate in "${candidates[@]}"; do
+    if [[ -f "$candidate/CODE_REVIEW_CHECKLIST.md" ]]; then
+      available+=("$candidate")
+    fi
+  done
+  if [[ "${#available[@]}" -gt 1 ]]; then
+    echo "警告：检测到多个清单候选目录；运行时必须按当前宿主优先级选择且不得混用：${available[*]}" >&2
   fi
 }
 
@@ -130,17 +149,129 @@ check_checklist_content_quality() {
 
 check_skill_routing_references() {
   local skill_file referenced_path
-  for skill_file in "$SKILL_ROOT"/*/SKILL.md "$SKILL_ROOT"/backend/*/SKILL.md; do
-    [[ -f "$skill_file" ]] || continue
-    # 检查是否引用不存在的清单路径
+  while IFS= read -r skill_file; do
     while IFS= read -r referenced_path; do
-      # 提取可能的路径引用（这里简化处理，只检查特定模式）
-      if grep -q "CHECKLIST_ROOT" "$skill_file" 2>/dev/null; then
-        # 如果提到 CHECKLIST_ROOT 则跳过（主 skill 应该有定义）
-        :
+      if [[ ! -f "$CHECKLIST_ROOT/$referenced_path" ]]; then
+        fail "$skill_file 引用了不存在的清单：$referenced_path"
       fi
-    done < <(grep -o 'business-test/[a-z-]*\.md\|code-review/[a-z-]*\.md\|db-change/[a-z-]*\.md' "$skill_file" 2>/dev/null | sort -u)
+    done < <(grep -Eo 'business-test/[a-z-]+\.md|code-review/[a-z-]+\.md|db-change/[a-z-]+\.md|external-api-doc/[a-z-]+\.md' "$skill_file" 2>/dev/null | sort -u)
+  done < <(find "$SKILL_ROOT" -type f -name 'SKILL.md' -print | sort)
+}
+
+check_total_checklist_routing_references() {
+  local checklist_file referenced_path
+  for checklist_file in "$CHECKLIST_ROOT"/*.md; do
+    [[ -f "$checklist_file" ]] || continue
+    while IFS= read -r referenced_path; do
+      if [[ ! -f "$CHECKLIST_ROOT/$referenced_path" ]]; then
+        fail "$checklist_file 引用了不存在的领域子清单：$referenced_path"
+      fi
+    done < <(grep -Eo 'business-test/[a-z-]+\.md|code-review/[a-z-]+\.md|db-change/[a-z-]+\.md|external-api-doc/[a-z-]+\.md' "$checklist_file" 2>/dev/null | sort -u)
   done
+}
+
+check_workflow_routing_references() {
+  local workflow_name
+  for workflow_name in preflight-grill.md visualization.md user-journey-acceptance.md; do
+    if ! grep -qF "workflows/$workflow_name" "$SKILL_ROOT/SKILL.md"; then
+      fail "主 skill 未引用工作流：workflows/$workflow_name"
+    fi
+  done
+}
+
+check_subskill_routing_references() {
+  local subskill_path
+  for subskill_path in \
+    backend/java-review/SKILL.md \
+    backend/springboot-review/SKILL.md \
+    backend/database-review/SKILL.md \
+    backend/data-access-review/SKILL.md \
+    frontend-review/SKILL.md \
+    appsec-review/SKILL.md \
+    test-generation/SKILL.md; do
+    if ! grep -qF "$subskill_path" "$SKILL_ROOT/SKILL.md"; then
+      fail "主 skill 未路由专业子 skill：$subskill_path"
+    fi
+  done
+  if ! grep -F '一次任务可以组合多个子 skill' "$SKILL_ROOT/SKILL.md" | grep -qF 'appsec-review'; then
+    fail '主 skill 缺少多个专业子 skill 的组合路由示例'
+  fi
+}
+
+check_host_specific_path_order() {
+  if ! grep -qF '在 Codex 中' "$SKILL_ROOT/SKILL.md" || ! grep -qF '在 Claude Code 中' "$SKILL_ROOT/SKILL.md"; then
+    fail '主 skill 未分别定义 Codex 与 Claude Code 的清单路径优先级'
+  fi
+  if ! grep -qF '在 Codex 中' "$GLOBAL_RULE_BLOCK" || ! grep -qF '在 Claude Code 中' "$GLOBAL_RULE_BLOCK"; then
+    fail '全局规则片段未分别定义 Codex 与 Claude Code 的清单路径优先级'
+  fi
+}
+
+sha256_stdin() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | awk '{ print $1 }'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | awk '{ print $1 }'
+  else
+    return 1
+  fi
+}
+
+check_legacy_project_manifest() {
+  local manifest_file="$1"
+  local manifest_header="$2"
+  local tag_name="$3"
+  local source_layout="$4"
+  local expected_record_count="$5"
+  local line kind relative_path expected_hash extra tag_path actual_hash
+  local record_count=0
+  local duplicate_records
+  local tag_available=0
+
+  require_file "$manifest_file"
+  [[ -f "$manifest_file" ]] || return
+  if [[ "$(sed -n '1p' "$manifest_file")" != "$manifest_header" ]]; then
+    fail "$tag_name 项目升级清单表头无效"
+    return
+  fi
+  if git -C "$REPO_ROOT" rev-parse -q --verify "refs/tags/$tag_name^{commit}" >/dev/null 2>&1; then
+    tag_available=1
+  elif git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    echo "警告：当前 Git 仓库未包含 $tag_name 标签，只验证项目升级清单的格式、数量和重复记录。" >&2
+  fi
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == "$manifest_header" || -z "$line" || "${line#\#}" != "$line" ]] && continue
+    IFS=$'\t' read -r kind relative_path expected_hash extra <<< "$line"
+    if [[ -z "$kind" || -z "$relative_path" || -z "$expected_hash" || -n "$extra" || ! "$expected_hash" =~ ^[[:xdigit:]]{64}$ ]]; then
+      fail "$tag_name 项目升级清单记录无效：$line"
+      continue
+    fi
+    case "$kind" in
+      skills|checklists)
+        if [[ "$source_layout" == 'codex' ]]; then
+          tag_path=".codex/$kind/$relative_path"
+        else
+          tag_path="$kind/$relative_path"
+        fi
+        ;;
+      *)
+        fail "$tag_name 项目升级清单包含未知类型：$kind"
+        continue
+        ;;
+    esac
+    record_count=$((record_count + 1))
+    if [[ "$tag_available" -eq 1 ]]; then
+      if git -C "$REPO_ROOT" cat-file -e "$tag_name:$tag_path" 2>/dev/null; then
+        actual_hash="$(git -C "$REPO_ROOT" show "$tag_name:$tag_path" | sha256_stdin)"
+        [[ "$actual_hash" == "$expected_hash" ]] || fail "$tag_name 项目升级清单哈希不一致：$kind/$relative_path"
+      else
+        fail "$tag_name 标签缺少升级清单对应文件：$tag_path"
+      fi
+    fi
+  done < "$manifest_file"
+  [[ "$record_count" -eq "$expected_record_count" ]] || fail "$tag_name 项目升级清单应为 ${expected_record_count} 条，实际为 $record_count"
+  duplicate_records="$(awk -F '\t' 'NF == 3 && $1 !~ /^#/ { print $1 "\t" $2 }' "$manifest_file" | sort | uniq -d)"
+  [[ -z "$duplicate_records" ]] || fail "$tag_name 项目升级清单存在重复记录：$duplicate_records"
 }
 
 require_file "$REPO_ROOT/AGENTS.md"
@@ -148,6 +279,8 @@ require_file "$REPO_ROOT/README.md"
 require_file "$SKILL_ROOT/SKILL.md"
 require_file "$RULES_FILE"
 require_file "$GLOBAL_RULE_BLOCK"
+require_file "$LEGACY_PROJECT_MANIFEST_V015"
+require_file "$LEGACY_PROJECT_MANIFEST_V020"
 
 for document_file in \
   checklist-routing.md \
@@ -175,6 +308,12 @@ check_checklist_path_conflicts
 check_workflow_content_quality
 check_checklist_content_quality
 check_skill_routing_references
+check_total_checklist_routing_references
+check_workflow_routing_references
+check_subskill_routing_references
+check_host_specific_path_order
+check_legacy_project_manifest "$LEGACY_PROJECT_MANIFEST_V015" "$LEGACY_PROJECT_MANIFEST_HEADER_V015" v0.1.5 codex "$expected_legacy_project_old_record_count"
+check_legacy_project_manifest "$LEGACY_PROJECT_MANIFEST_V020" "$LEGACY_PROJECT_MANIFEST_HEADER_V020" v0.2.0 root "$expected_legacy_project_release_record_count"
 
 require_file "$CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md"
 require_file "$CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md"
@@ -242,7 +381,8 @@ for unix_script in \
   install-project.sh \
   install-global.sh \
   uninstall-global.sh \
-  status.sh; do
+  status.sh \
+  test-lifecycle.sh; do
   require_file "$SCRIPT_DIR/$unix_script"
 done
 
@@ -272,4 +412,4 @@ if [[ "$error_count" -ne 0 ]]; then
   exit 1
 fi
 
-echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、工作流引用、活动引用、Unix 入口与语法均正常。"
+echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、项目升级清单、宿主路径顺序、工作流引用、活动引用、Unix 入口与语法均正常。"

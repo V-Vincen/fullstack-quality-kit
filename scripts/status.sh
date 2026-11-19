@@ -72,6 +72,10 @@ TARGET_CHECKLISTS="$codex_home_path/checklists/fullstack-quality-kit"
 GLOBAL_AGENTS="$codex_home_path/$RULES_FILE_NAME"
 MANIFEST="$TARGET_CHECKLISTS/.fullstack-quality-kit.manifest"
 MANIFEST_HEADER='# fullstack-quality-kit manifest v2'
+PROJECT_TARGET_SKILLS="$project_root/$TARGET_DIR_NAME/skills"
+PROJECT_TARGET_CHECKLISTS="$project_root/$TARGET_DIR_NAME/checklists"
+PROJECT_MANIFEST="$PROJECT_TARGET_CHECKLISTS/.fullstack-quality-kit.manifest"
+PROJECT_MANIFEST_HEADER='# fullstack-quality-kit project manifest v1'
 MARKER_START='<!-- fullstack-quality-kit:begin -->'
 MARKER_END='<!-- fullstack-quality-kit:end -->'
 
@@ -174,6 +178,50 @@ report_tree() {
   fi
 }
 
+report_project_manifest_status() {
+  local line kind relative_path expected_hash extra target_file
+  local consistent=0
+  local modified=0
+  local missing=0
+  local invalid=0
+
+  if [[ ! -f "$PROJECT_MANIFEST" ]]; then
+    echo '  未发现项目安装清单；旧版项目安装需重新执行 install-project.sh 完成安全升级'
+    return 0
+  fi
+  if [[ "$(sed -n '1p' "$PROJECT_MANIFEST")" != "$PROJECT_MANIFEST_HEADER" ]]; then
+    echo '  项目安装清单：版本或格式无法识别'
+    return 0
+  fi
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == "$PROJECT_MANIFEST_HEADER" || -z "$line" || "${line#\#}" != "$line" ]] && continue
+    IFS=$'\t' read -r kind relative_path expected_hash extra <<< "$line"
+    if [[ -z "$kind" || -z "$relative_path" || -z "$expected_hash" || -n "$extra" || ! "$expected_hash" =~ ^[[:xdigit:]]{64}$ ]] || ! is_safe_relative_path "$relative_path"; then
+      invalid=$((invalid + 1))
+      continue
+    fi
+    case "$kind" in
+      skills) target_file="$PROJECT_TARGET_SKILLS/$relative_path" ;;
+      checklists) target_file="$PROJECT_TARGET_CHECKLISTS/$relative_path" ;;
+      *)
+        invalid=$((invalid + 1))
+        continue
+        ;;
+    esac
+    expected_hash="$(printf '%s' "$expected_hash" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -e "$target_file" ]]; then
+      missing=$((missing + 1))
+    elif [[ ! -f "$target_file" ]]; then
+      modified=$((modified + 1))
+    elif [[ "$(file_sha256 "$target_file" 2>/dev/null || true)" == "$expected_hash" ]]; then
+      consistent=$((consistent + 1))
+    else
+      modified=$((modified + 1))
+    fi
+  done < "$PROJECT_MANIFEST"
+  echo "  项目安装清单 v1：一致 $consistent 个，已修改 $modified 个，缺失 $missing 个，格式异常 $invalid 个"
+}
+
 report_manifest_status() {
   local line kind managed_path expected_hash extra current_block
   local consistent=0
@@ -253,8 +301,9 @@ echo "源 skill：$(count_files "$SOURCE_SKILL_ROOT" 'SKILL.md') 个"
 echo "源清单：$(count_files "$SOURCE_CHECKLISTS" '*.md') 个"
 echo "项目级安装：$project_root"
 if [[ -d "$project_root" ]]; then
-  report_tree "$SOURCE_SKILLS" "$project_root/$TARGET_DIR_NAME/skills"
-  report_tree "$SOURCE_CHECKLISTS" "$project_root/$TARGET_DIR_NAME/checklists"
+  report_tree "$SOURCE_SKILLS" "$PROJECT_TARGET_SKILLS"
+  report_tree "$SOURCE_CHECKLISTS" "$PROJECT_TARGET_CHECKLISTS"
+  report_project_manifest_status
 else
   echo '  业务项目目录不存在'
 fi
