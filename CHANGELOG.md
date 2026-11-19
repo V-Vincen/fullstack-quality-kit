@@ -1,5 +1,34 @@
 # 变更记录
 
+## v0.2.0-SNAPSHOT - 2026-11-19
+
+本版本为快照，尚未发布正式版本：Claude Code 对嵌套子 skill 的加载行为还没有在真实环境中验证完成。
+
+### 新增 Claude Code 目标
+
+- `install-global.sh`、`uninstall-global.sh`、`status.sh`、`install-project.sh` 新增 `--target codex|claude`，默认仍为 `codex`，行为与 `v0.1.5` 一致。
+- `--target claude` 的全局目录默认为 `~/.claude/`（可用 `CLAUDE_CONFIG_DIR` 覆盖），受管理规则区块合并进 `CLAUDE.md`，项目级安装到 `<业务项目>/.claude/`。
+- `CHECKLIST_ROOT` 解析顺序扩展为：当前项目 `.claude/`、当前项目 `.codex/`、全局 `~/.claude/`、全局 `~/.codex/`，全部不存在时报告清单缺失。完整说明只保留在主 skill「清单联动」一节和 `rules/global-agents.block.md`，7 个子 skill 和 4 个总清单改为引用主 skill。
+- 规则文件改为宿主无关：全局规则写法统一为「AGENTS.md 或 CLAUDE.md」；`CODE_REVIEW_CHECKLIST.md` 补充 Claude Code 使用 `相对路径:行号` 的位置格式。
+
+### 审查输出调整
+
+- 统一审查结果模板移除每个问题下的「未覆盖项和已知风险」，改为整份报告结尾写一次；`Low`、`Info` 级别可只写位置、证据、建议。
+- 新增「好发现与坏发现对照」示例（虚构的 Spring Boot N+1 案例）。
+
+### 破坏性变更
+
+- 子 skill `security-review` 改名为 `appsec-review`，避免与 Claude Code 内置 `security-review` 同名。已安装旧版的环境重新安装后，旧的 `security-review/` 目录可能残留（安装脚本只新增和升级，不删除），需要手动清理。
+- 仓库源目录由 `.codex/skills/`、`.codex/checklists/` 迁移到根目录 `skills/`、`checklists/`。安装目标路径不变，使用 `--target claude` 做新安装的内容与迁移前逐字一致。
+- 删除 Windows 的 PowerShell 和批处理入口（共 10 个文件），暂不支持 Windows；`validate.sh` 不再检查 Windows 入口。
+
+### 验证与已知限制
+
+- `./scripts/validate.sh` 通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单。
+- 在隔离临时目录中验证了 `--target claude` 与 `--target codex` 的安装、重复安装、状态、项目级安装和卸载；其中卸载后 `CLAUDE.md`、`AGENTS.md` 比安装前多一个空行，是既有行为，不是本版本引入。
+- 未做：真实 `~/.claude` 全局安装、Claude Code 对嵌套子 skill 路径的加载验证、`appsec-review` 与内置 skill 的冲突复核。
+- 子 skill 与总清单中约 21 条与正文近似重复的清单条目本版本保留，留待后续决定。
+
 ## v0.1.5 - 2026-10-17
 
 ### 文档与仓库维护
