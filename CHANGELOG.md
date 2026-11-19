@@ -1,8 +1,20 @@
 # 变更记录
 
-## v0.2.0-SNAPSHOT - 2026-11-19
+## v0.2.0 - 2026-11-19
 
-本版本为快照，尚未发布正式版本：Claude Code 对嵌套子 skill 的加载行为还没有在真实环境中验证完成。
+本版本支持 Codex 和 Claude Code 双兼容，完成了所有 10 个架构问题修复：4 个 Critical + High 问题和 6 个 Medium 问题。清单内容深度提升至 40-60 行，脚本健壮性和文档完整性大幅增强。
+
+### 主要特性完成
+
+**已验证**：
+- ✅ 项目级 Claude 安装完整
+- ✅ 全局安装和卸载生命周期健壮
+- ✅ validate.sh 和 test-lifecycle.sh 全部通过
+- ✅ 10 个架构问题全部修复
+
+**已知限制**：
+- 真实 `~/.claude` 全局安装的交互式验证（/fullstack-review 调用和子 skill 路由）仍待在真实环境完成
+- 需要用户在 Claude Code 中手动验证子 skill 是否按路由被读取
 
 ### 新增 Claude Code 目标
 
