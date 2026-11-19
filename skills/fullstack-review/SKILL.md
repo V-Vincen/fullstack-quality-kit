@@ -16,8 +16,6 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循宿主全
 | 触发条件 | 工作流文件 | 完成后的处理 |
 |---|---|---|
 | 需求、范围或验收标准不清 | `workflows/preflight-grill.md` | 返回主流程继续路由，未回答内容标记为待确认。 |
-| 新增 Skill、清单、路由或调整结构 | `workflows/design-context.md` | 先输出设计方案，获得确认后再修改。 |
-| 修改 Skill、清单、路由或脚本 | `workflows/tdd-verification.md` | 对已授权修改执行行为和回归验证。 |
 | 用户要求画图或关系复杂 | `workflows/visualization.md` | 基于真实文件和已验证路由输出 Mermaid。 |
 | 用户要求用户流程或上线前体验验收，或审查覆盖核心用户流程 | `workflows/user-journey-acceptance.md` | 从真实用户入口验收后，返回主流程继续路由。 |
 

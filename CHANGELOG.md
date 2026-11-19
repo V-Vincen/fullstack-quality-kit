@@ -21,10 +21,11 @@
 - 清单路径按目录解析，第一个包含对应总清单文件的位置生效，同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
 - 修正 CODE_REVIEW_CHECKLIST.md 第 30 行：从"未处理风险"改为"该问题的剩余风险"，整份报告的未覆盖项写在报告结尾。
 
-### 去重与路由简化
+### 去重与工作流简化
 
 - 删除 2 条清单里一字不差的重复项：`data-access-quality.md` 中"查询后再写入是否存在竞态..."（改由乐观锁项覆盖）、`user-journey-acceptance.md` 中"覆盖正常完成、失败、返回..."（改由"理解反馈"项涵盖）。
-- 删除 3 个维护类工作流（design-context、tdd-verification、visualization）的用户路由表项，保留需求澄清（requirement-clarification）和用户流程验收（user-journey-acceptance）两个用户路由，维护工作流仅供内部工程使用。
+- 删除 2 个维护工作流文件（design-context.md、tdd-verification.md），相关规则迁移到 AGENTS.md 的维护工程规则。
+- 保留 3 个用户路由工作流：需求澄清（preflight-grill）、可视化（visualization）、用户流程验收（user-journey-acceptance）。
 
 ### 审查输出调整
 
@@ -39,7 +40,7 @@
 
 ### 测试与验证
 
-- `./scripts/validate.sh` 通过：8 个 skill、2 个用户路由工作流 + 2 个维护工作流、4 个总清单、27 个领域子清单。
+- `./scripts/validate.sh` 通过：8 个 skill、3 个用户工作流、4 个总清单、27 个领域子清单。
 - 新增 `scripts/test-lifecycle.sh`，把安装生命周期检查固化为可重复执行的脚本：在隔离临时目录中覆盖 codex 与 claude 两个目标的全局安装、重复安装、状态、项目级安装、卸载、安装内容与仓库源一致、非法 `--target` 被拒绝、升级时清理源中已删除的受管文件，共 28 项，当前全部通过。
 - 在隔离临时目录中验证了 `--target claude` 与 `--target codex` 的安装、重复安装、状态、项目级安装和卸载；其中卸载后 `CLAUDE.md`、`AGENTS.md` 比安装前多一个空行，是既有行为，不是本版本引入。
 - 已观察：在业务项目中做项目级 `--target claude` 安装后，新开的 Claude Code 会话启动事件里注册的 skill 只有主 skill `fullstack-review`；子 skill（含 `appsec-review`）没有被注册成独立 skill，也没有出现与内置 `security-review` 同名冲突的迹象。
