@@ -93,7 +93,6 @@ description: Review relational database engines and database changes for schema 
 - 写入 SQL、DDL、迁移或数据库配置时，读取 CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md、code-review/code-quality-baseline.md 和 code-review/database-quality.md。
 - 执行数据写入、删除、结构变更或可能造成锁等待的操作时，读取 CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md，并按范围读取 db-change/ 子清单。
 - 数据变化影响接口、页面或状态时，读取 CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md 及相关 business-test/ 子清单。
-- 用户明确要求整理或生成外部接口文档时，读取 CHECKLIST_ROOT/EXTERNAL_API_DOC_CHECKLIST.md 及相关 external-api-doc/ 子清单。
 
 ## 输出要求
 

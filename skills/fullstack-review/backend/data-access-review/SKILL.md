@@ -101,9 +101,8 @@ description: Review data-access implementations such as MyBatis, JPA/Hibernate, 
 清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入 Mapper、Repository、JPA、JDBC、查询构造器或测试代码时，读取 CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md、code-review/code-quality-baseline.md 和 code-review/data-access-quality.md；测试代码另读 code-review/test-code-quality.md。
-- 涉及输入、权限、租户、敏感数据或原生 SQL 时，读取 code-review/security-code-quality.md，并按业务范围读取 CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md。
-- 涉及数据库写入、删除、结构变更或真实数据校验时，读取 CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md 及相关 db-change/ 子清单。
-- 用户明确要求整理或生成外部接口文档时，读取 CHECKLIST_ROOT/EXTERNAL_API_DOC_CHECKLIST.md 及相关 external-api-doc/ 子清单。
+- 涉及输入、权限、租户、敏感数据或原生 SQL 时，读取 CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md、code-review/code-quality-baseline.md，再读取 code-review/security-code-quality.md，并按业务范围读取 CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md 及相关 business-test/ 子清单。
+- 涉及数据访问功能或接口行为变化时，读取 CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md，并按范围读取 business-test/api-behavior.md、business-test/state-transition.md 或 business-test/regression-suite.md。
 
 ## 输出要求
 

@@ -67,4 +67,3 @@ description: Review full-stack applications for authentication, authorization, t
 - 写入认证、授权、输入处理、安全配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md` 和 `code-review/security-code-quality.md`；测试代码另读 `code-review/test-code-quality.md`。
 - 认证、授权、越权、敏感数据或接口行为变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，并读取 `business-test/permission-boundary.md`、`business-test/api-behavior.md`、`business-test/concurrency-idempotency.md` 或 `business-test/regression-suite.md`。
 - 安全问题涉及数据库写入、租户字段、审计数据或结构变更时，读取 `CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md` 及相关 `db-change/` 子清单。
-- 用户明确要求整理或生成外部接口文档时，读取 `CHECKLIST_ROOT/EXTERNAL_API_DOC_CHECKLIST.md`、`external-api-doc/api-security.md` 和其他实际相关子清单；安全审查本身不等于接口文档整理。

@@ -65,7 +65,6 @@ description: Review Spring Boot applications for dependency injection, web APIs,
 - 写入 Spring Boot 代码、配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md`、`code-review/springboot-quality.md`；测试代码另读 `code-review/test-code-quality.md`。
 - 接口、事务、缓存、消息或状态行为变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，再按范围读取 `business-test/api-behavior.md`、`business-test/state-transition.md`、`business-test/concurrency-idempotency.md` 或 `business-test/regression-suite.md`。
 - 涉及数据库写入或结构变更时，读取 `CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md` 及相关 `db-change/` 子清单。
-- 用户明确要求整理或生成外部接口文档时，读取 `CHECKLIST_ROOT/EXTERNAL_API_DOC_CHECKLIST.md`、`external-api-doc/api-discovery.md`、`external-api-doc/api-contract.md`、`external-api-doc/api-error-retry.md` 和 `external-api-doc/api-version-compatibility.md`。
 
 ## 输出要求
 
