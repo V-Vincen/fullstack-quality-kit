@@ -3,9 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKILL_ROOT="$REPO_ROOT/.codex/skills/fullstack-review"
+SKILL_ROOT="$REPO_ROOT/skills/fullstack-review"
 WORKFLOW_ROOT="$SKILL_ROOT/workflows"
-CHECKLIST_ROOT="$REPO_ROOT/.codex/checklists"
+CHECKLIST_ROOT="$REPO_ROOT/checklists"
 RULES_FILE="$SCRIPT_DIR/validation-rules.conf"
 GLOBAL_RULE_BLOCK="$REPO_ROOT/rules/global-agents.block.md"
 
@@ -198,7 +198,7 @@ if grep -RInE '/Users/[^/[:space:]]+|[A-Za-z]:\\Users\\' \
   fail '公开规则或文档中仍包含个人用户目录'
 fi
 
-if grep -RIn --exclude='*.DS_Store' 'mysql-mybatis-quality.md' "$REPO_ROOT/.codex" >/dev/null 2>&1; then
+if grep -RIn --exclude='*.DS_Store' 'mysql-mybatis-quality.md' "$REPO_ROOT/skills" "$REPO_ROOT/checklists" >/dev/null 2>&1; then
   fail '活动文件仍引用已拆分的 mysql-mybatis-quality.md'
 fi
 

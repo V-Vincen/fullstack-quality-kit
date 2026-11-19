@@ -42,7 +42,7 @@ fullstack-review
 
 fullstack-review 是工作流和专业子 skill 的唯一主入口。工作流只处理需求澄清、设计、验证或图形化等执行步骤；完成后必须返回主入口，再按实际技术范围选择专业子 skill。
 
-工作流文件、触发条件和完成后的处理以 [fullstack-review 主 skill](../.codex/skills/fullstack-review/SKILL.md) 中的路由表为准；本文不重复维护同一张表。
+工作流文件、触发条件和完成后的处理以 [fullstack-review 主 skill](../skills/fullstack-review/SKILL.md) 中的路由表为准；本文不重复维护同一张表。
 
 ~~~text
 fullstack-review

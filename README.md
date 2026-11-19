@@ -23,10 +23,8 @@ Spring Boot
 ## 目标结构
 
 ~~~text
-.codex/
-├── skills/fullstack-review/
-└── checklists/
-
+skills/fullstack-review/
+checklists/
 rules/
 scripts/
 docs/

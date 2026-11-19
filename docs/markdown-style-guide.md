@@ -7,8 +7,8 @@
 - README 和变更记录。
 - AGENTS.md 和规则片段。
 - docs/ 目录下的说明文档。
-- .codex/checklists/ 下的总清单和领域子清单。
-- .codex/skills/ 下的 skill 文档。
+- checklists/ 下的总清单和领域子清单。
+- skills/ 下的 skill 文档。
 
 本规范只约束排版和文档结构，不改变规则含义、skill 路由、清单检查项、命令参数或脚本行为。
 

@@ -3,9 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SOURCE_SKILLS="$REPO_ROOT/.codex/skills"
+SOURCE_SKILLS="$REPO_ROOT/skills"
 SOURCE_SKILL_ROOT="$SOURCE_SKILLS/fullstack-review"
-SOURCE_CHECKLISTS="$REPO_ROOT/.codex/checklists"
+SOURCE_CHECKLISTS="$REPO_ROOT/checklists"
 RULE_SOURCE="$REPO_ROOT/rules/global-agents.block.md"
 
 yes_flag=0

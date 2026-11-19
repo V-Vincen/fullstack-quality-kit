@@ -2,8 +2,8 @@
 
 ## 快速索引
 
-- `.codex/skills/`：项目级 skill ¹。
-- `.codex/checklists/`：项目级清单 ²。
+- `skills/`：skill ¹ 源文件，安装时复制到目标工具的 `skills/` 目录。
+- `checklists/`：清单 ² 源文件，安装时复制到目标工具的 `checklists/` 目录。
 - `rules/`：可合并到用户全局规则的规则片段。
 - `scripts/`：安装与安全升级、状态、验证和全局卸载脚本。
 - `docs/`：执行计划、仓库结构、安装方式、使用说明和 Markdown 排版规范。
@@ -14,18 +14,18 @@
 
 ## 源文件职责
 
-- `.codex/skills/` 是项目级 skill 的唯一维护入口。
-- `.codex/checklists/` 是项目级清单的唯一维护入口。
+- `skills/` 是 skill 的唯一维护入口，不再放在 `.codex/` 下；安装脚本按 `--target codex|claude` 复制到 `.codex/` 或 `.claude/`。
+- `checklists/` 是清单的唯一维护入口，安装目标同上。
 - `rules/global-agents.block.md` 只保存可直接合并的全局规则管理区块，不包含个人路径或仓库说明。
-- 不把个人完整的全局 AGENTS.md 复制进本仓库。
+- 不把个人完整的全局 AGENTS.md 或 CLAUDE.md 复制进本仓库。
 - 不把具体业务项目的 AGENTS.md、配置、账号或数据复制进本仓库。
 
 ## 清单路径解析
 
-- `CHECKLIST_ROOT` 先解析为当前项目的 `.codex/checklists/`。
-- 当前项目不存在对应清单时，再解析为 `~/.codex/checklists/fullstack-quality-kit/`。
+- `CHECKLIST_ROOT` 按以下顺序解析，第一个存在对应文件的位置生效：当前项目的 `.claude/checklists/`、当前项目的 `.codex/checklists/`、`~/.claude/checklists/fullstack-quality-kit/`、`~/.codex/checklists/fullstack-quality-kit/`。
 - `CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。
-- 两个位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
+- 所有候选位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
+- 完整说明以主 skill「清单联动」一节为准。
 
 ## 修改规则
 
@@ -45,6 +45,6 @@
 
 ## 术语注解
 
-skill¹：Codex 可调用的专业能力说明目录。
+skill¹：Codex 或 Claude Code 可调用的专业能力说明目录。
 
 清单²：触发某类任务后必须执行的检查项集合。

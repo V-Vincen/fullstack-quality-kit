@@ -4,9 +4,9 @@
 
 | 源位置 | 目标位置 | 数量 | 状态 |
 |---|---|---:|---|
-| 原 fullstack-review 目录 | `.codex/skills/fullstack-review/` | 8 | 已迁移并完成拆分 |
-| 原全局清单根目录 | `.codex/checklists/` 根目录 | 4 | 已迁移 |
-| 原全局清单子目录 | `.codex/checklists/` 对应子目录 | 26 | 已迁移并完成拆分 |
+| 原 fullstack-review 目录 | `skills/fullstack-review/` | 8 | 已迁移并完成拆分 |
+| 原全局清单根目录 | `checklists/` 根目录 | 4 | 已迁移 |
+| 原全局清单子目录 | `checklists/` 对应子目录 | 26 | 已迁移并完成拆分 |
 | 原全局 `AGENTS.md` 联动区块 | `rules/global-agents.block.md` | 1 | 已提取 |
 
 ## 未迁移内容
