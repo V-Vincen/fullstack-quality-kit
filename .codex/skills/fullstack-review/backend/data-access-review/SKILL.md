@@ -93,12 +93,12 @@ description: Review data-access implementations such as MyBatis, JPA/Hibernate, 
 - 数据库引擎、DDL、索引、执行计划、锁和迁移读取 database-review。
 - Java 集合、线程池和异常实现读取 java-review。
 - Spring 配置、事务代理、缓存和消息整合读取 springboot-review。
-- 注入、越权、敏感信息和租户隔离读取 security-review。
+- 注入、越权、敏感信息和租户隔离读取 appsec-review。
 - 数据访问变化后的接口、页面和回归用例读取 test-generation。
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入 Mapper、Repository、JPA、JDBC、查询构造器或测试代码时，读取 CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md、code-review/code-quality-baseline.md 和 code-review/data-access-quality.md；测试代码另读 code-review/test-code-quality.md。
 - 涉及输入、权限、租户、敏感数据或原生 SQL 时，读取 code-review/security-code-quality.md，并按业务范围读取 CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md。
@@ -107,4 +107,4 @@ description: Review data-access implementations such as MyBatis, JPA/Hibernate, 
 
 ## 输出要求
 
-每个数据访问问题必须指出具体 Mapper、Repository、查询、参数来源或事务入口、触发条件、影响范围、修复方向和验证方式。不能只写“存在 N+1”或“增加事务”，必须说明实际查询、边界和验证证据。
+每个数据访问问题必须指出具体 Mapper、Repository、查询、参数来源或事务入口、触发条件、影响范围、修复方向和验证方式。不能只写“存在 N+1”或“增加事务”，必须说明实际查询、边界和验证证据。Low 和 Info 级别可按主 skill「统一审查结果」中的「报告结尾」精简字段。

@@ -186,20 +186,6 @@ for unix_script in \
   require_file "$SCRIPT_DIR/$unix_script"
 done
 
-for windows_script in \
-  validate.ps1 \
-  install-project.ps1 \
-  install-global.ps1 \
-  uninstall-global.ps1 \
-  status.ps1 \
-  validate.bat \
-  install-project.bat \
-  install-global.bat \
-  uninstall-global.bat \
-  status.bat; do
-  require_file "$SCRIPT_DIR/$windows_script"
-done
-
 if [[ -f "$GLOBAL_RULE_BLOCK" ]] && grep -q '^# ' "$GLOBAL_RULE_BLOCK"; then
   fail '全局规则片段不能包含一级标题，避免合并后破坏全局 AGENTS.md 结构'
 fi
@@ -212,13 +198,6 @@ if grep -RInE '/Users/[^/[:space:]]+|[A-Za-z]:\\Users\\' \
   fail '公开规则或文档中仍包含个人用户目录'
 fi
 
-for batch_script in "$SCRIPT_DIR"/*.bat; do
-  [[ -f "$batch_script" ]] || continue
-  powershell_script="${batch_script%.bat}.ps1"
-  grep -qF -- "$(basename "$powershell_script")" "$batch_script" ||
-    fail "$batch_script 未转发到对应的 PowerShell 脚本"
-done
-
 if grep -RIn --exclude='*.DS_Store' 'mysql-mybatis-quality.md' "$REPO_ROOT/.codex" >/dev/null 2>&1; then
   fail '活动文件仍引用已拆分的 mysql-mybatis-quality.md'
 fi
@@ -228,13 +207,9 @@ for script_file in "$SCRIPT_DIR"/*.sh; do
   bash -n "$script_file" || fail "脚本语法错误：$script_file"
 done
 
-if ! command -v pwsh >/dev/null 2>&1 && ! command -v powershell >/dev/null 2>&1; then
-  echo '提示：当前环境未找到 pwsh 或 powershell，仅验证 Windows 入口文件和批处理转发关系。' >&2
-fi
-
 if [[ "$error_count" -ne 0 ]]; then
   echo "验证失败：$error_count 项。" >&2
   exit 1
 fi
 
-echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、工作流引用、活动引用、Unix 入口与语法、Windows 入口文件与批处理转发关系均正常。"
+echo "验证通过：${expected_skill_count} 个 skill、${expected_workflow_count} 个工作流、${expected_root_checklist_count} 个总清单、${expected_domain_checklist_count} 个领域子清单、工作流引用、活动引用、Unix 入口与语法均正常。"

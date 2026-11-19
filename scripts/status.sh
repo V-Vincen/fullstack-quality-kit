@@ -7,17 +7,69 @@ SOURCE_SKILLS="$REPO_ROOT/.codex/skills"
 SOURCE_SKILL_ROOT="$SOURCE_SKILLS/fullstack-review"
 SOURCE_CHECKLISTS="$REPO_ROOT/.codex/checklists"
 
-project_root="${1:-$PWD}"
-codex_home_path="${2:-${CODEX_HOME:-$HOME/.codex}}"
+usage() {
+  echo "用法：$0 [--target codex|claude] [业务项目目录] [全局目录]"
+  echo "默认目标：codex（项目 .codex/，全局 ${CODEX_HOME:-$HOME/.codex}，规则文件 AGENTS.md）"
+  echo "--target claude：项目 .claude/，全局 ${CLAUDE_CONFIG_DIR:-$HOME/.claude}，规则文件 CLAUDE.md"
+}
 
-if [[ "$project_root" == '-h' || "$project_root" == '--help' ]]; then
-  echo "用法：$0 [业务项目目录] [Codex 全局目录]"
-  exit 0
+target_tool='codex'
+positional=()
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --target)
+      [[ "$#" -ge 2 ]] || { echo "失败：--target 需要参数 codex 或 claude。" >&2; exit 2; }
+      target_tool="$2"
+      shift 2
+      ;;
+    --target=*)
+      target_tool="${1#--target=}"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "失败：未知参数：$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      positional+=("$1")
+      shift
+      ;;
+  esac
+done
+if [[ "${#positional[@]}" -gt 2 ]]; then
+  echo "失败：最多只接受 业务项目目录 和 全局目录 两个位置参数。" >&2
+  usage >&2
+  exit 2
 fi
+
+case "$target_tool" in
+  codex)
+    TARGET_DIR_NAME='.codex'
+    RULES_FILE_NAME='AGENTS.md'
+    default_home="${CODEX_HOME:-$HOME/.codex}"
+    ;;
+  claude)
+    TARGET_DIR_NAME='.claude'
+    RULES_FILE_NAME='CLAUDE.md'
+    default_home="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+    ;;
+  *)
+    echo "失败：--target 只支持 codex 或 claude：$target_tool" >&2
+    exit 2
+    ;;
+esac
+
+project_root="${positional[0]:-$PWD}"
+codex_home_path="${positional[1]:-$default_home}"
 
 TARGET_SKILLS="$codex_home_path/skills/fullstack-review"
 TARGET_CHECKLISTS="$codex_home_path/checklists/fullstack-quality-kit"
-GLOBAL_AGENTS="$codex_home_path/AGENTS.md"
+GLOBAL_AGENTS="$codex_home_path/$RULES_FILE_NAME"
 MANIFEST="$TARGET_CHECKLISTS/.fullstack-quality-kit.manifest"
 MANIFEST_HEADER='# fullstack-quality-kit manifest v2'
 MARKER_START='<!-- fullstack-quality-kit:begin -->'
@@ -201,8 +253,8 @@ echo "源 skill：$(count_files "$SOURCE_SKILL_ROOT" 'SKILL.md') 个"
 echo "源清单：$(count_files "$SOURCE_CHECKLISTS" '*.md') 个"
 echo "项目级安装：$project_root"
 if [[ -d "$project_root" ]]; then
-  report_tree "$SOURCE_SKILLS" "$project_root/.codex/skills"
-  report_tree "$SOURCE_CHECKLISTS" "$project_root/.codex/checklists"
+  report_tree "$SOURCE_SKILLS" "$project_root/$TARGET_DIR_NAME/skills"
+  report_tree "$SOURCE_CHECKLISTS" "$project_root/$TARGET_DIR_NAME/checklists"
 else
   echo '  业务项目目录不存在'
 fi

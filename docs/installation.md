@@ -10,23 +10,6 @@
 ./scripts/validate.sh
 ~~~
 
-### Windows PowerShell
-
-直接执行 PowerShell 脚本前，如果当前环境阻止未签名脚本，可以只对当前 PowerShell 进程放行：
-
-~~~powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\validate.ps1
-~~~
-
-### Windows 命令提示符
-
-在传统命令提示符中使用批处理入口：
-
-~~~bat
-scripts\validate.bat
-~~~
-
 ## 项目级安装
 
 将 skill 和清单安装到业务项目，不修改业务项目的 AGENTS.md：
@@ -36,22 +19,6 @@ scripts\validate.bat
 ~~~bash
 ./scripts/install-project.sh /绝对路径/业务项目
 ~~~
-
-### Windows PowerShell
-
-~~~powershell
-.\scripts\install-project.ps1 -ProjectDir 'D:\Projects\业务项目'
-~~~
-
-### Windows 命令提示符
-
-~~~bat
-scripts\install-project.bat "D:\Projects\业务项目"
-~~~
-
-如果目标文件不存在，脚本会创建；如果目标文件已存在且内容一致，脚本会跳过；如果内容不同，脚本会停止并报告冲突。
-
-重复执行同一命令是安全的。
 
 ## 全局安装
 
@@ -97,22 +64,23 @@ scripts\install-project.bat "D:\Projects\业务项目"
 ./scripts/install-global.sh --yes /绝对路径/Codex目录
 ~~~
 
-### Windows PowerShell
+### 安装到 Claude Code
 
-~~~powershell
-.\scripts\install-global.ps1
-.\scripts\install-global.ps1 -Yes
-.\scripts\install-global.ps1 -SkipAgents
-.\scripts\install-global.ps1 -Yes -SkipAgents
-.\scripts\install-global.ps1 -Yes -CodexHomePath 'D:\Codex'
+安装、查看状态和卸载脚本都支持 `--target codex|claude`，不加参数时目标是 `codex`，行为与以前一致。`--target claude` 的差异如下：
+
+- 全局目录默认是 `~/.claude/`，可用环境变量 `CLAUDE_CONFIG_DIR` 或位置参数覆盖。
+- 受管理的规则区块合并进 `CLAUDE.md`，不是 `AGENTS.md`。
+- 项目级安装到业务项目的 `.claude/skills/` 和 `.claude/checklists/`。
+
+~~~bash
+./scripts/install-global.sh --target claude
+./scripts/install-global.sh --yes --target claude --skip-agents
+./scripts/install-project.sh --target claude /绝对路径/业务项目
+./scripts/status.sh --target claude /绝对路径/业务项目
+./scripts/uninstall-global.sh --yes --target claude
 ~~~
 
-### Windows 命令提示符
-
-~~~bat
-scripts\install-global.bat -Yes
-scripts\install-global.bat -Yes -SkipAgents
-~~~
+清单路径按「当前项目 `.claude/` → 当前项目 `.codex/` → 全局 `~/.claude/` → 全局 `~/.codex/`」的顺序解析，同一台机器同时装了两个目标时，Claude Code 优先使用 `.claude/` 下的副本。
 
 ### 已有根目录清单的迁移
 
@@ -121,13 +89,13 @@ scripts\install-global.bat -Yes -SkipAgents
 1. 比较原始清单与仓库当前清单，确认是否存在本机独有内容。
 2. 备份原始清单和全局 `AGENTS.md`。
 3. 将全局规则中的固定清单路径改为 `CHECKLIST_ROOT`，并补充项目级优先、全局命名空间兜底的解析规则。
-4. 全局规则已经具备等效联动内容时，使用 `--skip-agents` 或 `-SkipAgents` 安装 skill 和命名空间清单。
+4. 全局规则已经具备等效联动内容时，使用 `--skip-agents` 安装 skill 和命名空间清单。
 5. 验证项目级优先路径、全局兜底路径、重复安装和安装清单状态。
 6. 保留原始根目录清单，完成一次安装后的真实项目审查；再次确认后才逐个清理旧副本。
 
 原始根目录清单不会被全局安装清单记录，全局卸载脚本也不会处理它们。清理时必须保留 `~/.codex/checklists/fullstack-quality-kit/`。
 
-脚本只合并 `rules/global-agents.block.md` 管理的规则区块，不覆盖用户完整的全局 `AGENTS.md`。`--skip-agents` 和 `-SkipAgents` 只跳过规则区块，不影响 skill 和清单安装。
+脚本只合并 `rules/global-agents.block.md` 管理的规则区块，不覆盖用户完整的全局 `AGENTS.md`。`--skip-agents` 只跳过规则区块，不影响 skill 和清单安装。
 
 全局安装会在 `~/.codex/checklists/fullstack-quality-kit/.fullstack-quality-kit.manifest` 写入安装清单 v2。清单只记录由本工具创建或安全升级的文件和规则区块，并保存内容哈希；安装前已存在且内容一致、但不属于本工具的文件不会被纳入卸载范围。
 
@@ -147,20 +115,6 @@ scripts\install-global.bat -Yes -SkipAgents
 ./scripts/status.sh /绝对路径/业务项目 /绝对路径/Codex目录
 ~~~
 
-### Windows PowerShell
-
-~~~powershell
-.\scripts\status.ps1 -ProjectDir 'D:\Projects\业务项目' -CodexHomePath 'D:\Codex'
-~~~
-
-### Windows 命令提示符
-
-~~~bat
-scripts\status.bat "D:\Projects\业务项目" "D:\Codex"
-~~~
-
-状态结果分为两层：目录状态显示安装目标与当前仓库源的差异；安装清单 v2 显示由本工具管理的内容是否被修改、缺失或损坏。两者分别回答“是否跟随当前源”和“是否可由卸载脚本安全处理”。
-
 ## 全局卸载
 
 全局卸载只处理安装清单 v2 记录的文件和受标记管理的规则区块，不删除用户原有的同名文件：
@@ -177,22 +131,7 @@ scripts\status.bat "D:\Projects\业务项目" "D:\Codex"
 ./scripts/uninstall-global.sh --yes
 ~~~
 
-### Windows PowerShell
-
-~~~powershell
-.\scripts\uninstall-global.ps1 -Yes
-~~~
-
-### Windows 命令提示符
-
-~~~bat
-scripts\uninstall-global.bat -Yes
-~~~
-
-卸载前脚本会按内容哈希核验每个记录：内容未变才删除；内容已被用户修改时保留文件和对应清单记录，并以非零状态结束，提示卸载未完全完成。旧版或无法核验的安装清单不会被卸载；请先运行全局安装脚本完成安全升级。移除规则区块前会备份全局 `AGENTS.md`。项目级安装需要由项目维护者根据项目 Git 状态回滚，不使用全局卸载脚本。
-
 ## 验证限制
 
-- macOS/Linux 的 Bash 入口可以在当前平台执行语法和行为验证。
-- Bash 验证脚本只检查 Windows 文件和批处理转发关系，不把该结果表述为真实 Windows 运行通过。
-- PowerShell 入口仍需在真实 Windows 主机完成最终闭环验证。
+- 当前只提供 macOS/Linux 的 Bash 入口，暂不支持 Windows；Windows 的 PowerShell 和批处理入口已移除。
+- Bash 入口已在隔离的临时目录中验证首次安装、重复安装、状态检查和卸载；`--target claude` 尚未在真实的 `~/.claude` 上安装，也未验证 Claude Code 对嵌套子 skill 的加载行为。

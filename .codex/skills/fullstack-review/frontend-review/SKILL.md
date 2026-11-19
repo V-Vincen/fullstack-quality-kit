@@ -57,12 +57,12 @@ description: Review frontend applications built with HTML, CSS, JavaScript/TypeS
 
 - 后端接口实现、事务、配置和消息读取 `springboot-review`。
 - 数据库、SQL、表结构和索引读取 `database-review`；MyBatis、JPA/Hibernate、JDBC 和 Mapper 读取 `data-access-review`。
-- 通用注入、认证授权、敏感数据和依赖安全读取 `security-review`。
+- 通用注入、认证授权、敏感数据和依赖安全读取 `appsec-review`。
 - 页面交互、浏览器兼容和接口联调场景读取 `test-generation`。
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入前端代码、配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md`、`code-review/frontend-quality.md`；涉及安全代码时另读 `code-review/security-code-quality.md`，测试代码另读 `code-review/test-code-quality.md`。
 - 页面交互、接口结果、表单、路由或状态变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，再读取 `business-test/frontend-interaction.md`、`business-test/api-behavior.md`、`business-test/permission-boundary.md` 或 `business-test/regression-suite.md`。
@@ -70,4 +70,4 @@ description: Review frontend applications built with HTML, CSS, JavaScript/TypeS
 
 ## 输出要求
 
-问题必须关联具体组件、页面、路由、事件、请求或构建配置，说明触发步骤和用户可见影响。页面代码审查不得只报告格式偏好；优先报告状态遗漏、数据错误、兼容性、可访问性、安全和性能证据。
+问题必须关联具体组件、页面、路由、事件、请求或构建配置，说明触发步骤和用户可见影响。页面代码审查不得只报告格式偏好；优先报告状态遗漏、数据错误、兼容性、可访问性、安全和性能证据。Low 和 Info 级别可按主 skill「统一审查结果」中的「报告结尾」精简字段。

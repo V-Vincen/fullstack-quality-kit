@@ -4,7 +4,7 @@
 
 ## 清单路径解析
 
-CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。以下路由均相对于 CHECKLIST_ROOT。
+CHECKLIST_ROOT 按主 skill `fullstack-review`「清单联动」一节解析，所有候选位置都不存在时必须报告清单缺失。以下路由均相对于 CHECKLIST_ROOT。
 
 ## 领域子清单路由
 

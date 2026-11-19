@@ -41,5 +41,5 @@
 ## 待完成验收
 
 - 在真实用户全局目录完成安装、切换和旧目录清理。
-- 在真实 Windows 主机完成 PowerShell 与批处理入口闭环验证。
+- 在真实 `~/.claude` 完成 `--target claude` 安装，并验证 Claude Code 对主 skill、嵌套子 skill 和清单路径的加载。
 - 完成 fullstack-quality-kit 在实际业务项目中的最终工具调用验收。

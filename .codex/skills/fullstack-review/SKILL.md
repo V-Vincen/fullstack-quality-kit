@@ -9,7 +9,7 @@ description: Review full-stack applications and generate standard test cases by 
 
 ## 工作模式
 
-fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `AGENTS.md` 的授权、范围、备份、验证和交付规则，再根据用户任务决定是否读取工作流；工作流只补充执行步骤，不替代现有总清单、领域子清单或专业子 skill。
+fullstack-review 始终是唯一主入口。开始任务时，先遵循宿主全局规则（AGENTS.md 或 CLAUDE.md）中的授权、范围、备份、验证和交付规则，再根据用户任务决定是否读取工作流；工作流只补充执行步骤，不替代现有总清单、领域子清单或专业子 skill。
 
 按以下路由表读取当前任务相关的工作流，不得默认加载全部工作流：
 
@@ -37,16 +37,26 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `A
 - 数据库表结构、SQL、索引、事务、锁、迁移、回滚，以及 MySQL、PostgreSQL、Oracle、SQL Server、SQLite 等数据库引擎：读取 `backend/database-review/SKILL.md`。
 - MyBatis、JPA/Hibernate、JDBC、Mapper、Repository、ORM 查询和数据访问实现：读取 `backend/data-access-review/SKILL.md`。
 - HTML、CSS、JavaScript/TypeScript、React/Vue、页面交互、构建和浏览器兼容：读取 `frontend-review/SKILL.md`。
-- 认证授权、输入处理、注入、Token、敏感信息、依赖和接口安全：读取 `security-review/SKILL.md`。
+- 认证授权、输入处理、注入、Token、敏感信息、依赖和接口安全：读取 `appsec-review/SKILL.md`。
 - 用户要求测试、验收、回归或测试代码：读取 `test-generation/SKILL.md`。
 
-一次任务可以组合多个子 skill。例如登录功能通常同时读取 `frontend-review`、`springboot-review`、`security-review` 和 `test-generation`。
+一次任务可以组合多个子 skill。例如登录功能通常同时读取 `frontend-review`、`springboot-review`、`appsec-review` 和 `test-generation`。
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径解析：CHECKLIST_ROOT 按以下顺序解析，第一个存在对应文件的位置生效：
 
-始终遵循当前 `AGENTS.md` 的授权、范围、备份、验证和交付规则。根据实际变更触发总清单，再读取总清单列出的领域子清单：
+~~~text
+1. 当前项目/.claude/checklists/
+2. 当前项目/.codex/checklists/
+3. ~/.claude/checklists/fullstack-quality-kit/
+4. ~/.codex/checklists/fullstack-quality-kit/
+5. 都不存在：报告清单缺失，不得回退到其他项目目录
+~~~
+
+本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。子 skill 和总清单不重复维护这段说明，统一按本节解析。
+
+始终遵循宿主全局规则（AGENTS.md 或 CLAUDE.md）中的授权、范围、备份、验证和交付规则。根据实际变更触发总清单，再读取总清单列出的领域子清单：
 
 - 代码、配置或脚本写入：读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`，并按技术范围读取 `code-review/` 下的子清单。
 - 业务行为、接口结果或页面交互变化：读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，并按测试范围读取 `business-test/` 下的子清单。
@@ -65,7 +75,7 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `A
 | `data-access-review` | `code-review/data-access-quality.md`、`code-review/security-code-quality.md`、`business-test/regression-suite.md` |
 | `frontend-review` | `code-review/frontend-quality.md`、`business-test/frontend-interaction.md` |
 | `test-generation` | `business-test/business-test-baseline.md`、`business-test/api-behavior.md`、`business-test/regression-suite.md` |
-| `security-review` | `code-review/security-code-quality.md`、`business-test/permission-boundary.md`、`external-api-doc/api-security.md` |
+| `appsec-review` | `code-review/security-code-quality.md`、`business-test/permission-boundary.md`、`external-api-doc/api-security.md` |
 
 ## 工作方式
 
@@ -90,7 +100,6 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `A
 建议：最小可行修复方向；必要时说明兼容性和回滚注意事项
 处理状态：已修复、待确认、未处理或仅供参考
 验证：修复后应执行的检查、测试或复现步骤
-未覆盖项和已知风险：本次未验证内容及其剩余风险
 ~~~
 
 级别定义：
@@ -102,6 +111,35 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循当前 `A
 - `Info`：建议、观察项或需要业务确认的事项，不作为缺陷统计。
 
 不要把个人编码偏好直接定性为问题；格式建议只有在项目规范、构建检查、可维护性或实际行为受到影响时才报告。
+
+### 报告结尾
+
+- 整份报告结尾只写一次「未覆盖项和已知风险」：本次未验证内容及其剩余风险，不在每个问题下重复。
+- 小问题（`Low`、`Info`）可只写位置、证据、建议三项；`Blocker`、`High`、`Medium` 仍使用完整字段。
+
+## 好发现与坏发现对照
+
+以下示例为虚构的 Spring Boot 项目，仅用于说明写法。
+
+坏发现：只有现象，没有入口、证据和验证方式，无法复核，也无法据此修复。
+
+~~~text
+[Medium] 存在 N+1，建议优化
+~~~
+
+好发现：写清入口、触发场景、证据、根因、影响、建议和验证。
+
+~~~text
+[Medium] 订单列表接口逐条查询明细，请求耗时随页大小线性增长
+位置：OrderController#list -> OrderService#listOrders，OrderMapper.xml 中 selectItemsByOrderId
+触发场景：GET /orders?size=100，每页订单都带明细
+证据：listOrders 在 for 循环内调用 selectItemsByOrderId；开启 SQL 日志后 1 次请求执行 101 条查询
+根因：明细在循环内逐条加载，没有按订单 ID 批量查询
+影响：页大小为 100 时单次请求产生 101 次数据库往返，并发高时占满连接池
+建议：改为 selectItemsByOrderIds 一次 in 查询后按订单 ID 分组组装；保持分页和排序语义不变
+处理状态：待确认
+验证：同参数请求的 SQL 条数降为 2；补充订单无明细、明细为空的接口测试
+~~~
 
 ## 常规测试用例要求
 

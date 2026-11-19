@@ -57,12 +57,12 @@ description: Review Java backend code for Alibaba Java Coding Guidelines, correc
 
 - Spring Bean、Web 接口、事务、缓存、消息和配置问题读取 `springboot-review`。
 - SQL、表结构、索引、事务锁、迁移和数据库引擎问题读取 `database-review`；MyBatis、JPA/Hibernate、JDBC 和数据访问实现问题读取 `data-access-review`。
-- 认证授权、注入、Token 和敏感数据问题读取 `security-review`。
+- 认证授权、注入、Token 和敏感数据问题读取 `appsec-review`。
 - 需要测试时读取 `test-generation`，并为正常、异常、边界、并发和回归路径生成用例。
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入 Java 代码、配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md`、`code-review/java-quality.md`；测试代码另读 `code-review/test-code-quality.md`。
 - Java 改动影响接口、状态或业务结果时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，再按范围读取 `business-test/api-behavior.md`、`business-test/state-transition.md` 或 `business-test/regression-suite.md`。
@@ -71,4 +71,4 @@ description: Review Java backend code for Alibaba Java Coding Guidelines, correc
 
 ## 输出要求
 
-每个问题必须给出文件和行号或类/方法、触发条件、实际影响、修复方向和验证方式。将规范问题、确定性缺陷、风险推测和待确认事项分开，不把“建议重构”当作确定性 Bug。
+每个问题必须给出文件和行号或类/方法、触发条件、实际影响、修复方向和验证方式。将规范问题、确定性缺陷、风险推测和待确认事项分开，不把“建议重构”当作确定性 Bug。Low 和 Info 级别可按主 skill「统一审查结果」中的「报告结尾」精简字段。

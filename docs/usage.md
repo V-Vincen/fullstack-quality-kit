@@ -14,13 +14,13 @@
 
 | 脚本 | 作用 | 执行后的预期结果 |
 |---|---|---|
-| `validate.sh`、`validate.ps1`、`validate.bat` | 验证 skill、工作流、清单、路由、脚本入口和旧引用 | 按 `scripts/validation-rules.conf` 的统一数量输出验证通过 |
-| `install-project.sh`、`install-project.ps1`、`install-project.bat` | 将 skill 和清单复制到业务项目 `.codex/` | 输出项目级安装完成；一致文件跳过，冲突文件停止 |
-| `install-global.sh`、`install-global.ps1`、`install-global.bat` | 安装或安全升级全局 Codex 内容，并按需合并受管理的全局规则区块 | 输出新增、升级和跳过数量；以安装清单 v2 记录本工具管理的内容及其内容哈希 |
-| `uninstall-global.sh`、`uninstall-global.ps1`、`uninstall-global.bat` | 卸载全局安装清单中的文件和受管理规则区块 | 仅移除内容哈希仍一致的项目；已修改内容保留并提示未完全卸载 |
-| `status.sh`、`status.ps1`、`status.bat` | 对比源文件、项目级安装和全局安装 | 分别输出与当前源的差异，以及安装清单 v2 的一致、已修改、缺失和格式异常状态 |
+| `validate.sh` | 验证 skill、工作流、清单、路由、脚本入口和旧引用 | 按 `scripts/validation-rules.conf` 的统一数量输出验证通过 |
+| `install-project.sh` | 将 skill 和清单复制到业务项目 `.codex/`，加 `--target claude` 时复制到 `.claude/` | 输出项目级安装完成；一致文件跳过，冲突文件停止 |
+| `install-global.sh` | 安装或安全升级全局内容，并按需合并受管理的全局规则区块；默认目标 Codex，`--target claude` 目标 Claude Code | 输出新增、升级和跳过数量；以安装清单 v2 记录本工具管理的内容及其内容哈希 |
+| `uninstall-global.sh` | 卸载全局安装清单中的文件和受管理规则区块，同样支持 `--target` | 仅移除内容哈希仍一致的项目；已修改内容保留并提示未完全卸载 |
+| `status.sh` | 对比源文件、项目级安装和全局安装，同样支持 `--target` | 分别输出与当前源的差异，以及安装清单 v2 的一致、已修改、缺失和格式异常状态 |
 
-其中，`.sh` 适用于 macOS/Linux，`.ps1` 适用于 Windows PowerShell，`.bat` 是 Windows 命令提示符入口。批处理文件只负责转发到对应的 PowerShell 脚本。
+所有脚本均为 Bash，适用于 macOS/Linux，暂不支持 Windows。
 
 ## 案例一：项目级安装和调用
 
@@ -38,7 +38,7 @@ cd /path/to/fullstack-quality-kit
 预期结果：
 
 ~~~text
-验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Unix 入口与语法、Windows 入口文件与批处理转发关系均正常。
+验证通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单、工作流引用、活动引用、Unix 入口与语法均正常。
 ~~~
 
 安装到业务项目：
@@ -70,25 +70,6 @@ cd /path/to/fullstack-quality-kit
 已安装且一致：.../.codex/checklists
 ~~~
 
-### Windows PowerShell
-
-~~~powershell
-Set-Location 'D:\Projects\fullstack-quality-kit'
-Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\validate.ps1
-.\scripts\install-project.ps1 -ProjectDir 'D:\Projects\demo-project'
-.\scripts\status.ps1 -ProjectDir 'D:\Projects\demo-project' -CodexHomePath 'D:\Codex'
-~~~
-
-### Windows 命令提示符
-
-~~~bat
-cd /d D:\Projects\fullstack-quality-kit
-scripts\validate.bat
-scripts\install-project.bat "D:\Projects\demo-project"
-scripts\status.bat "D:\Projects\demo-project" "D:\Codex"
-~~~
-
 ### 在项目中调用
 
 安装完成后，在业务项目目录重新打开 Codex，在对话框中输入：
@@ -108,7 +89,7 @@ $fullstack-review
 - 数据库引擎、SQL、索引、事务、锁和迁移：`backend/database-review`
 - MyBatis、JPA/Hibernate、JDBC、Mapper 和 Repository：`backend/data-access-review`
 - 前端页面、组件、状态和浏览器交互：`frontend-review`
-- 认证、授权、注入、敏感数据和依赖安全：`security-review`
+- 认证、授权、注入、敏感数据和依赖安全：`appsec-review`
 - 测试计划、常规测试用例和测试代码：`test-generation`
 
 项目级清单优先于全局清单。只要业务项目存在对应文件，主 skill 会优先使用业务项目中的清单。
@@ -183,7 +164,7 @@ cd /path/to/fullstack-quality-kit
 全局规则管理区块：已纳入安装清单
 ~~~
 
-如果安装时使用了 `--skip-agents` 或 `-SkipAgents`，最后一行应改为：
+如果安装时使用了 `--skip-agents`，最后一行应改为：
 
 ~~~text
 未合并全局规则管理区块
@@ -196,39 +177,6 @@ $fullstack-review
 
 请审查当前项目的 Java、Spring Boot、数据库访问、前端交互、安全和测试覆盖。
 只分析当前改动，不修改文件。
-~~~
-
-### Windows PowerShell
-
-~~~powershell
-Set-Location 'D:\Projects\fullstack-quality-kit'
-Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\validate.ps1
-.\scripts\install-global.ps1
-.\scripts\status.ps1 -ProjectDir 'D:\Projects\demo-project' -CodexHomePath 'D:\Codex'
-~~~
-
-已有等效全局规则时：
-
-~~~powershell
-.\scripts\install-global.ps1 -SkipAgents
-~~~
-
-非交互安装：
-
-~~~powershell
-.\scripts\install-global.ps1 -Yes -CodexHomePath 'D:\Codex'
-.\scripts\install-global.ps1 -Yes -SkipAgents -CodexHomePath 'D:\Codex'
-~~~
-
-### Windows 命令提示符
-
-~~~bat
-cd /d D:\Projects\fullstack-quality-kit
-scripts\validate.bat
-scripts\install-global.bat -Yes
-scripts\install-global.bat -Yes -SkipAgents
-scripts\status.bat "D:\Projects\demo-project" "D:\Codex"
 ~~~
 
 ## 清单解析和调用关系

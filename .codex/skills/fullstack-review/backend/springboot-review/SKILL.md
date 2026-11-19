@@ -55,12 +55,12 @@ description: Review Spring Boot applications for dependency injection, web APIs,
 
 - Java 语法、集合、并发和 JVM 细节读取 `java-review`。
 - SQL、表结构、事务锁、迁移和数据库引擎细节读取 `database-review`；MyBatis、JPA/Hibernate、JDBC 和数据访问事务边界读取 `data-access-review`。
-- 认证授权、注入、Token、CORS 和敏感信息读取 `security-review`。
+- 认证授权、注入、Token、CORS 和敏感信息读取 `appsec-review`。
 - 需要验收时读取 `test-generation`，覆盖正常、异常、边界、重复调用和依赖失败。
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入 Spring Boot 代码、配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md`、`code-review/springboot-quality.md`；测试代码另读 `code-review/test-code-quality.md`。
 - 接口、事务、缓存、消息或状态行为变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，再按范围读取 `business-test/api-behavior.md`、`business-test/state-transition.md`、`business-test/concurrency-idempotency.md` 或 `business-test/regression-suite.md`。

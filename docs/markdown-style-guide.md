@@ -59,8 +59,6 @@
 | 内容 | 标识 |
 |---|---|
 | Bash 命令 | bash |
-| PowerShell 命令 | powershell |
-| Windows 批处理 | bat |
 | 普通目录结构或文本 | text |
 | Markdown 示例 | markdown |
 
@@ -91,8 +89,6 @@
 同一功能包含多个平台或场景时，使用统一的三级标题：
 
 - macOS/Linux
-- Windows PowerShell
-- Windows 命令提示符
 
 平台标题不使用普通段落，也不在标题后添加冒号。每个平台按照“说明文字 → 命令块”的顺序编排。
 

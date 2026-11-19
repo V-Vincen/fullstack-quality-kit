@@ -2,7 +2,7 @@
 
 ### Skill 与清单联动
 
-- `AGENTS.md` 负责全局授权、范围、工具、备份、验证和交付约束；skill 不得降低或绕过这些约束。
+- 宿主的全局规则文件（Codex 为 AGENTS.md，Claude Code 为 CLAUDE.md）负责全局授权、范围、工具、备份、验证和交付约束；skill 不得降低或绕过这些约束。
 - 触发全局清单后，先读取对应总清单，再按总清单路由读取相关领域子清单；只读取与当前任务相关的子清单。
 - `fullstack-review` 是唯一主入口，负责按需读取工作流、识别技术领域、选择子 skill、组合领域检查和生成测试；工作流和子 skill 不替代全局清单，也不得扩大用户授权。
 - 代码、配置或脚本写入时，执行 `CODE_REVIEW_CHECKLIST.md` 及相关代码审查子清单。
@@ -13,15 +13,23 @@
 
 ### 清单路径解析
 
-- `CHECKLIST_ROOT` 先解析为当前项目的 `.codex/checklists/`。
-- 当前项目不存在对应清单时，再解析为 `~/.codex/checklists/fullstack-quality-kit/`。
+- `CHECKLIST_ROOT` 按以下顺序解析，第一个存在对应文件的位置生效：
+
+~~~text
+1. 当前项目/.claude/checklists/
+2. 当前项目/.codex/checklists/
+3. ~/.claude/checklists/fullstack-quality-kit/
+4. ~/.codex/checklists/fullstack-quality-kit/
+5. 都不存在：报告清单缺失，不得回退到其他项目目录
+~~~
+
 - `CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。
-- 两个位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
+- 所有候选位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
 
 ### 安装约束
 
 - 安装脚本只能合并本文件管理的规则区块。
-- 不得覆盖用户完整的全局 `AGENTS.md`。
+- 不得覆盖用户完整的全局规则文件（Codex 为 `AGENTS.md`，Claude Code 为 `CLAUDE.md`）。
 - 已有等效全局规则时，应使用跳过规则参数，避免重复写入。
 - 安全升级只替换安装清单记录且内容未被用户修改的文件或规则区块；检测到用户修改时必须停止并报告冲突。
 - 安装、升级和卸载前必须确认目标路径、备份和回滚方式。

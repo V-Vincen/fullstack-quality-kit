@@ -8,17 +8,28 @@ SOURCE_SKILL_ROOT="$SOURCE_SKILLS/fullstack-review"
 SOURCE_CHECKLISTS="$REPO_ROOT/.codex/checklists"
 
 yes_flag=0
-codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+target_tool='codex'
+codex_home_path=''
 
 usage() {
-  echo "用法：$0 [--yes] [Codex 全局目录]"
-  echo "默认目录：${CODEX_HOME:-$HOME/.codex}"
+  echo "用法：$0 [--yes] [--target codex|claude] [全局目录]"
+  echo "默认目标：codex，默认目录：${CODEX_HOME:-$HOME/.codex}，全局规则文件：AGENTS.md"
+  echo "--target claude：默认目录 ${CLAUDE_CONFIG_DIR:-$HOME/.claude}，全局规则文件：CLAUDE.md"
 }
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --yes)
       yes_flag=1
+      shift
+      ;;
+    --target)
+      [[ "$#" -ge 2 ]] || { echo "失败：--target 需要参数 codex 或 claude。" >&2; exit 2; }
+      target_tool="$2"
+      shift 2
+      ;;
+    --target=*)
+      target_tool="${1#--target=}"
       shift
       ;;
     -h|--help)
@@ -31,7 +42,7 @@ while [[ "$#" -gt 0 ]]; do
       exit 2
       ;;
     *)
-      if [[ "$codex_home_path" != "${CODEX_HOME:-$HOME/.codex}" ]]; then
+      if [[ -n "$codex_home_path" ]]; then
         echo "失败：全局目录只能指定一次。" >&2
         exit 2
       fi
@@ -41,9 +52,24 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
+case "$target_tool" in
+  codex)
+    RULES_FILE_NAME='AGENTS.md'
+    [[ -n "$codex_home_path" ]] || codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+    ;;
+  claude)
+    RULES_FILE_NAME='CLAUDE.md'
+    [[ -n "$codex_home_path" ]] || codex_home_path="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+    ;;
+  *)
+    echo "失败：--target 只支持 codex 或 claude：$target_tool" >&2
+    exit 2
+    ;;
+esac
+
 TARGET_SKILLS="$codex_home_path/skills/fullstack-review"
 TARGET_CHECKLISTS="$codex_home_path/checklists/fullstack-quality-kit"
-GLOBAL_AGENTS="$codex_home_path/AGENTS.md"
+GLOBAL_AGENTS="$codex_home_path/$RULES_FILE_NAME"
 MANIFEST="$TARGET_CHECKLISTS/.fullstack-quality-kit.manifest"
 MANIFEST_HEADER='# fullstack-quality-kit manifest v2'
 MARKER_START='<!-- fullstack-quality-kit:begin -->'
@@ -188,7 +214,7 @@ validate_v2_manifest() {
 backup_global_agents() {
   backup_dir="$codex_home_path/backups"
   timestamp="$(date '+%Y%m%d-%H%M%S')"
-  backup_path="$backup_dir/fullstack-quality-kit--AGENTS.md--$timestamp-before-global-uninstall.bak"
+  backup_path="$backup_dir/fullstack-quality-kit--$RULES_FILE_NAME--$timestamp-before-global-uninstall.bak"
   mkdir -p "$backup_dir"
   [[ ! -e "$backup_path" ]] || { echo "失败：备份文件已存在：$backup_path" >&2; exit 1; }
   cp -p "$GLOBAL_AGENTS" "$backup_path"
@@ -269,7 +295,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       if [[ ! -f "$GLOBAL_AGENTS" ]] || ! grep -qF "$MARKER_START" "$GLOBAL_AGENTS"; then
         missing_count=$((missing_count + 1))
       elif ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
-        echo '失败：全局 AGENTS.md 的管理区块不完整，未执行卸载。' >&2
+        echo '失败：全局规则文件 的管理区块不完整，未执行卸载。' >&2
         exit 1
       elif [[ "$(block_sha256 "$current_block")" == "$expected_hash" ]]; then
         remove_block=1
@@ -305,7 +331,7 @@ if [[ "$remove_block" -eq 1 ]]; then
   agents_temp="$(mktemp)"
   remove_managed_block "$GLOBAL_AGENTS" "$agents_temp" || {
     rm -f "$agents_temp"
-    echo '失败：全局 AGENTS.md 的管理区块不完整，未完成卸载。' >&2
+    echo '失败：全局规则文件 的管理区块不完整，未完成卸载。' >&2
     exit 1
   }
   mv "$agents_temp" "$GLOBAL_AGENTS"

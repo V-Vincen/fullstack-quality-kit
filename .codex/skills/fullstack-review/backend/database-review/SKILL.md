@@ -83,12 +83,12 @@ description: Review relational database engines and database changes for schema 
 - MyBatis、JPA/Hibernate、JDBC、Mapper 和 Repository 实现读取 data-access-review。
 - Java 集合、线程池和异常实现读取 java-review。
 - Spring 事务代理、配置、缓存和消息整合读取 springboot-review。
-- 注入、越权、敏感信息和租户隔离读取 security-review。
+- 注入、越权、敏感信息和租户隔离读取 appsec-review。
 - 数据变更后的接口、页面和回归用例读取 test-generation。
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入 SQL、DDL、迁移或数据库配置时，读取 CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md、code-review/code-quality-baseline.md 和 code-review/database-quality.md。
 - 执行数据写入、删除、结构变更或可能造成锁等待的操作时，读取 CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md，并按范围读取 db-change/ 子清单。
@@ -97,4 +97,4 @@ description: Review relational database engines and database changes for schema 
 
 ## 输出要求
 
-每个数据库问题必须指出具体对象、语句或迁移步骤、触发条件、证据、影响范围、修复方向和验证方式。索引和性能问题必须说明所需执行计划、数据量或基线；不能只写“加索引”或“优化 SQL”。
+每个数据库问题必须指出具体对象、语句或迁移步骤、触发条件、证据、影响范围、修复方向和验证方式。索引和性能问题必须说明所需执行计划、数据量或基线；不能只写“加索引”或“优化 SQL”。Low 和 Info 级别可按主 skill「统一审查结果」中的「报告结尾」精简字段。

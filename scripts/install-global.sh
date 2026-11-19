@@ -10,11 +10,13 @@ RULE_SOURCE="$REPO_ROOT/rules/global-agents.block.md"
 
 yes_flag=0
 skip_agents=0
-codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+target_tool='codex'
+codex_home_path=''
 
 usage() {
-  echo "用法：$0 [--yes] [--skip-agents] [Codex 全局目录]"
-  echo "默认目录：${CODEX_HOME:-$HOME/.codex}"
+  echo "用法：$0 [--yes] [--skip-agents] [--target codex|claude] [全局目录]"
+  echo "默认目标：codex，默认目录：${CODEX_HOME:-$HOME/.codex}，全局规则文件：AGENTS.md"
+  echo "--target claude：默认目录 ${CLAUDE_CONFIG_DIR:-$HOME/.claude}，全局规则文件：CLAUDE.md"
 }
 
 while [[ "$#" -gt 0 ]]; do
@@ -27,6 +29,15 @@ while [[ "$#" -gt 0 ]]; do
       skip_agents=1
       shift
       ;;
+    --target)
+      [[ "$#" -ge 2 ]] || { echo "失败：--target 需要参数 codex 或 claude。" >&2; exit 2; }
+      target_tool="$2"
+      shift 2
+      ;;
+    --target=*)
+      target_tool="${1#--target=}"
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -37,7 +48,7 @@ while [[ "$#" -gt 0 ]]; do
       exit 2
       ;;
     *)
-      if [[ "$codex_home_path" != "${CODEX_HOME:-$HOME/.codex}" ]]; then
+      if [[ -n "$codex_home_path" ]]; then
         echo "失败：全局目录只能指定一次。" >&2
         exit 2
       fi
@@ -47,9 +58,24 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
+case "$target_tool" in
+  codex)
+    RULES_FILE_NAME='AGENTS.md'
+    [[ -n "$codex_home_path" ]] || codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+    ;;
+  claude)
+    RULES_FILE_NAME='CLAUDE.md'
+    [[ -n "$codex_home_path" ]] || codex_home_path="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+    ;;
+  *)
+    echo "失败：--target 只支持 codex 或 claude：$target_tool" >&2
+    exit 2
+    ;;
+esac
+
 TARGET_SKILLS="$codex_home_path/skills/fullstack-review"
 TARGET_CHECKLISTS="$codex_home_path/checklists/fullstack-quality-kit"
-GLOBAL_AGENTS="$codex_home_path/AGENTS.md"
+GLOBAL_AGENTS="$codex_home_path/$RULES_FILE_NAME"
 MANIFEST="$TARGET_CHECKLISTS/.fullstack-quality-kit.manifest"
 MANIFEST_HEADER='# fullstack-quality-kit manifest v2'
 MARKER_START='<!-- fullstack-quality-kit:begin -->'
@@ -342,12 +368,12 @@ agents_write_mode='none'
 agents_record_needs_update=0
 if [[ "$skip_agents" -eq 0 ]]; then
   if [[ -e "$GLOBAL_AGENTS" ]]; then
-    [[ -f "$GLOBAL_AGENTS" ]] || { echo "失败：全局 AGENTS.md 不是普通文件。" >&2; exit 1; }
+    [[ -f "$GLOBAL_AGENTS" ]] || { echo "失败：全局规则文件不是普通文件。" >&2; exit 1; }
     if grep -qF "$MARKER_START" "$GLOBAL_AGENTS" || grep -qF "$MARKER_END" "$GLOBAL_AGENTS"; then
       current_block="$(mktemp)"
       if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
         rm -f "$current_block"
-        echo "失败：全局 AGENTS.md 的管理区块不完整。" >&2
+        echo "失败：全局规则文件的管理区块不完整。" >&2
         exit 1
       fi
       desired_hash="$(block_sha256 "$desired_block")"
@@ -361,11 +387,11 @@ if [[ "$skip_agents" -eq 0 ]]; then
       elif [[ -n "$recorded_hash" && "$current_hash" == "$recorded_hash" ]]; then
         agents_write_mode='replace'
       else
-        echo "冲突：全局 AGENTS.md 已有不同的 fullstack-quality-kit 管理区块。" >&2
+        echo "冲突：全局规则文件已有不同的 fullstack-quality-kit 管理区块。" >&2
         exit 1
       fi
     else
-      [[ -w "$GLOBAL_AGENTS" ]] || { echo "失败：无法写入全局 AGENTS.md。" >&2; exit 1; }
+      [[ -w "$GLOBAL_AGENTS" ]] || { echo "失败：无法写入全局规则文件。" >&2; exit 1; }
       agents_write_mode='append'
     fi
   else
@@ -379,7 +405,7 @@ if [[ "$yes_flag" -ne 1 ]]; then
     exit 2
   fi
   if [[ "$skip_agents" -eq 1 ]]; then
-    printf '将安装到 %s，并跳过全局 AGENTS.md。继续？ [y/N] ' "$codex_home_path" > /dev/tty
+    printf '将安装到 %s，并跳过全局规则文件。继续？ [y/N] ' "$codex_home_path" > /dev/tty
   else
     printf '将安装到 %s，并可能更新 %s。继续？ [y/N] ' "$codex_home_path" "$GLOBAL_AGENTS" > /dev/tty
   fi
@@ -392,50 +418,50 @@ verify_agents_write_precondition() {
   [[ "$skip_agents" -eq 0 ]] || return 0
   case "$agents_write_mode" in
     none)
-      [[ -f "$GLOBAL_AGENTS" ]] || { echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2; return 1; }
+      [[ -f "$GLOBAL_AGENTS" ]] || { echo '冲突：全局规则文件在确认后发生变化。' >&2; return 1; }
       current_block="$(mktemp)"
       if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
         rm -f "$current_block"
-        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        echo '冲突：全局规则文件在确认后发生变化。' >&2
         return 1
       fi
       current_hash="$(block_sha256 "$current_block")"
       desired_hash="$(block_sha256 "$desired_block")"
       rm -f "$current_block"
       [[ "$current_hash" == "$desired_hash" ]] || {
-        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        echo '冲突：全局规则文件在确认后发生变化。' >&2
         return 1
       }
       ;;
     append)
       [[ -f "$GLOBAL_AGENTS" && -w "$GLOBAL_AGENTS" ]] || {
-        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        echo '冲突：全局规则文件在确认后发生变化。' >&2
         return 1
       }
       if grep -qF "$MARKER_START" "$GLOBAL_AGENTS" || grep -qF "$MARKER_END" "$GLOBAL_AGENTS"; then
-        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        echo '冲突：全局规则文件在确认后发生变化。' >&2
         return 1
       fi
       ;;
     replace)
-      [[ -f "$GLOBAL_AGENTS" ]] || { echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2; return 1; }
+      [[ -f "$GLOBAL_AGENTS" ]] || { echo '冲突：全局规则文件在确认后发生变化。' >&2; return 1; }
       current_block="$(mktemp)"
       if ! extract_managed_block "$GLOBAL_AGENTS" "$current_block"; then
         rm -f "$current_block"
-        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        echo '冲突：全局规则文件在确认后发生变化。' >&2
         return 1
       fi
       recorded_hash="$(manifest_record_hash agents-block "$GLOBAL_AGENTS" 2>/dev/null || true)"
       current_hash="$(block_sha256 "$current_block")"
       rm -f "$current_block"
       [[ -n "$recorded_hash" && "$current_hash" == "$recorded_hash" ]] || {
-        echo '冲突：全局 AGENTS.md 在确认后发生变化。' >&2
+        echo '冲突：全局规则文件在确认后发生变化。' >&2
         return 1
       }
       ;;
     create)
       [[ ! -e "$GLOBAL_AGENTS" ]] || {
-        echo '冲突：全局 AGENTS.md 在确认后已创建。' >&2
+        echo '冲突：全局规则文件在确认后已创建。' >&2
         return 1
       }
       ;;
@@ -450,7 +476,7 @@ backup_global_agents() {
   [[ "$agents_write_mode" != 'none' && "$agents_write_mode" != 'create' && -f "$GLOBAL_AGENTS" ]] || return 0
   backup_dir="$codex_home_path/backups"
   timestamp="$(date '+%Y%m%d-%H%M%S')"
-  backup_path="$backup_dir/fullstack-quality-kit--AGENTS.md--$timestamp-before-global-install.bak"
+  backup_path="$backup_dir/fullstack-quality-kit--$RULES_FILE_NAME--$timestamp-before-global-install.bak"
   mkdir -p "$backup_dir"
   [[ ! -e "$backup_path" ]] || { echo "失败：备份文件已存在：$backup_path" >&2; exit 1; }
   cp -p "$GLOBAL_AGENTS" "$backup_path"
@@ -542,7 +568,7 @@ if [[ -s "$created_files" || "$agents_write_mode" != 'none' || "$agents_record_n
 fi
 
 if [[ "$skip_agents" -eq 1 ]]; then
-  echo '已按参数跳过全局 AGENTS.md 规则区块。'
+  echo '已按参数跳过全局规则文件规则区块。'
 fi
 
 echo "全局安装完成：$codex_home_path"

@@ -7,23 +7,62 @@ SOURCE_SKILLS="$REPO_ROOT/.codex/skills"
 SOURCE_CHECKLISTS="$REPO_ROOT/.codex/checklists"
 
 usage() {
-  echo "用法：$0 <业务项目目录>"
+  echo "用法：$0 [--target codex|claude] <业务项目目录>"
+  echo "默认目标：codex，安装到 <业务项目目录>/.codex/；claude 安装到 <业务项目目录>/.claude/"
 }
 
-if [[ "$#" -ne 1 || "$1" == '-h' || "$1" == '--help' ]]; then
-  usage
-  [[ "$#" -eq 1 ]] && exit 0
+target_tool='codex'
+PROJECT_ROOT=''
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --target)
+      [[ "$#" -ge 2 ]] || { echo "失败：--target 需要参数 codex 或 claude。" >&2; exit 2; }
+      target_tool="$2"
+      shift 2
+      ;;
+    --target=*)
+      target_tool="${1#--target=}"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "失败：未知参数：$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [[ -n "$PROJECT_ROOT" ]]; then
+        echo "失败：业务项目目录只能指定一次。" >&2
+        exit 2
+      fi
+      PROJECT_ROOT="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$PROJECT_ROOT" ]]; then
+  usage >&2
   exit 2
 fi
-
-PROJECT_ROOT="$1"
+case "$target_tool" in
+  codex) TARGET_DIR_NAME='.codex' ;;
+  claude) TARGET_DIR_NAME='.claude' ;;
+  *)
+    echo "失败：--target 只支持 codex 或 claude：$target_tool" >&2
+    exit 2
+    ;;
+esac
 if [[ ! -d "$PROJECT_ROOT" ]]; then
   echo "失败：业务项目目录不存在：$PROJECT_ROOT" >&2
   exit 1
 fi
 
-TARGET_SKILLS="$PROJECT_ROOT/.codex/skills"
-TARGET_CHECKLISTS="$PROJECT_ROOT/.codex/checklists"
+TARGET_SKILLS="$PROJECT_ROOT/$TARGET_DIR_NAME/skills"
+TARGET_CHECKLISTS="$PROJECT_ROOT/$TARGET_DIR_NAME/checklists"
 
 preflight_tree() {
   local source_dir="$1"

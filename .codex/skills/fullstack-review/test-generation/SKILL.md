@@ -60,7 +60,7 @@ description: Generate standard test cases and, when requested, test code for ful
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 先解析为当前项目/.codex/checklists/；不存在时再解析为 ~/.codex/checklists/fullstack-quality-kit/。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。
+清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 生成或执行业务测试时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md` 和 `business-test/business-test-baseline.md`，再按范围读取 `api-behavior.md`、`frontend-interaction.md`、`state-transition.md`、`permission-boundary.md`、`concurrency-idempotency.md` 或 `regression-suite.md`。
 - 写入测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md` 和 `code-review/test-code-quality.md`。
