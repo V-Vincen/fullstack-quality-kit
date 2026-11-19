@@ -5,7 +5,7 @@
 - `skills/`：skill ¹ 源文件，安装时复制到目标工具的 `skills/` 目录。
 - `checklists/`：清单 ² 源文件，安装时复制到目标工具的 `checklists/` 目录。
 - `rules/`：可合并到用户全局规则的规则片段。
-- `scripts/`：安装与安全升级、状态、验证和全局卸载脚本。
+- `scripts/`：安装与安全升级、状态、验证、生命周期测试和全局卸载脚本。
 - `docs/`：执行计划、仓库结构、安装方式、使用说明和 Markdown 排版规范。
 
 ## 仓库目标
@@ -22,7 +22,7 @@
 
 ## 清单路径解析
 
-- `CHECKLIST_ROOT` 按以下顺序解析，第一个存在对应文件的位置生效：当前项目的 `.claude/checklists/`、当前项目的 `.codex/checklists/`、`~/.claude/checklists/fullstack-quality-kit/`、`~/.codex/checklists/fullstack-quality-kit/`。
+- 清单路径按以下顺序按目录解析：当前项目的 `.claude/checklists/`、当前项目的 `.codex/checklists/`、`~/.claude/checklists/fullstack-quality-kit/`、`~/.codex/checklists/fullstack-quality-kit/`。第一个包含对应总清单文件的位置生效，同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
 - `CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。
 - 所有候选位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
 - 完整说明以主 skill「清单联动」一节为准。

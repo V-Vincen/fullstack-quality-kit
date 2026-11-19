@@ -11,6 +11,21 @@
 - `CHECKLIST_ROOT` 解析顺序扩展为：当前项目 `.claude/`、当前项目 `.codex/`、全局 `~/.claude/`、全局 `~/.codex/`，全部不存在时报告清单缺失。完整说明只保留在主 skill「清单联动」一节和 `rules/global-agents.block.md`，7 个子 skill 和 4 个总清单改为引用主 skill。
 - 规则文件改为宿主无关：全局规则写法统一为「AGENTS.md 或 CLAUDE.md」；`CODE_REVIEW_CHECKLIST.md` 补充 Claude Code 使用 `相对路径:行号` 的位置格式。
 
+### 安装升级与卸载改进
+
+- `install-global.sh` 升级时自动清理源中已删除但安装清单记录的受管文件。如文件在安装后被用户修改，则保留并提示。
+- `uninstall-global.sh` 卸载时清理已移除文件遗留的空父目录。
+
+### 清单路径解析精化
+
+- 清单路径按目录解析，第一个包含对应总清单文件的位置生效，同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
+- 修正 CODE_REVIEW_CHECKLIST.md 第 30 行：从"未处理风险"改为"该问题的剩余风险"，整份报告的未覆盖项写在报告结尾。
+
+### 去重与路由简化
+
+- 删除 2 条清单里一字不差的重复项：`data-access-quality.md` 中"查询后再写入是否存在竞态..."（改由乐观锁项覆盖）、`user-journey-acceptance.md` 中"覆盖正常完成、失败、返回..."（改由"理解反馈"项涵盖）。
+- 删除 3 个维护类工作流（design-context、tdd-verification、visualization）的用户路由表项，保留需求澄清（requirement-clarification）和用户流程验收（user-journey-acceptance）两个用户路由，维护工作流仅供内部工程使用。
+
 ### 审查输出调整
 
 - 统一审查结果模板移除每个问题下的「未覆盖项和已知风险」，改为整份报告结尾写一次；`Low`、`Info` 级别可只写位置、证据、建议。
@@ -22,12 +37,14 @@
 - 仓库源目录由 `.codex/skills/`、`.codex/checklists/` 迁移到根目录 `skills/`、`checklists/`。安装目标路径不变，使用 `--target claude` 做新安装的内容与迁移前逐字一致。
 - 删除 Windows 的 PowerShell 和批处理入口（共 10 个文件），暂不支持 Windows；`validate.sh` 不再检查 Windows 入口。
 
-### 验证与已知限制
+### 测试与验证
 
-- `./scripts/validate.sh` 通过：8 个 skill、5 个工作流、4 个总清单、27 个领域子清单。
+- `./scripts/validate.sh` 通过：8 个 skill、2 个用户路由工作流 + 2 个维护工作流、4 个总清单、27 个领域子清单。
+- 新增 `scripts/test-lifecycle.sh`，把安装生命周期检查固化为可重复执行的脚本：在隔离临时目录中覆盖 codex 与 claude 两个目标的全局安装、重复安装、状态、项目级安装、卸载、安装内容与仓库源一致、非法 `--target` 被拒绝、升级时清理源中已删除的受管文件，共 28 项，当前全部通过。
 - 在隔离临时目录中验证了 `--target claude` 与 `--target codex` 的安装、重复安装、状态、项目级安装和卸载；其中卸载后 `CLAUDE.md`、`AGENTS.md` 比安装前多一个空行，是既有行为，不是本版本引入。
-- 未做：真实 `~/.claude` 全局安装、Claude Code 对嵌套子 skill 路径的加载验证、`appsec-review` 与内置 skill 的冲突复核。
-- 子 skill 与总清单中约 21 条与正文近似重复的清单条目本版本保留，留待后续决定。
+- 已观察：在业务项目中做项目级 `--target claude` 安装后，新开的 Claude Code 会话启动事件里注册的 skill 只有主 skill `fullstack-review`；子 skill（含 `appsec-review`）没有被注册成独立 skill，也没有出现与内置 `security-review` 同名冲突的迹象。
+- 未做：真实 `~/.claude` 全局安装，以及在交互式会话中调用 `/fullstack-review` 后确认子 skill 是否按路由被读取。
+- 子 skill 与总清单中约 19 条与正文近似重复的清单条目本版本保留，留待后续决定。
 
 ## v0.1.5 - 2026-10-17
 

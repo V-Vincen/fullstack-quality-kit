@@ -567,6 +567,50 @@ if [[ -s "$created_files" || "$agents_write_mode" != 'none' || "$agents_record_n
   fi
 fi
 
+prune_stale_files() {
+  [[ -f "$MANIFEST" && "$(sed -n '1p' "$MANIFEST")" == "$MANIFEST_HEADER" ]] || return 0
+  local line kind managed_path expected_hash source_file root dir
+  local pruned=0 kept=0
+  local manifest_temp
+  manifest_temp="$(mktemp)"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    IFS=$'\t' read -r kind managed_path expected_hash <<< "$line"
+    if [[ "$kind" != 'file' ]]; then
+      printf '%s\n' "$line" >> "$manifest_temp"
+      continue
+    fi
+    source_file="$(source_for_managed_path "$managed_path")" || source_file=''
+    if [[ -n "$source_file" && ! -e "$source_file" ]]; then
+      if [[ ! -e "$managed_path" ]]; then
+        pruned=$((pruned + 1))
+        continue
+      elif [[ -f "$managed_path" && "$(file_sha256 "$managed_path")" == "$(printf '%s' "$expected_hash" | tr '[:upper:]' '[:lower:]')" ]]; then
+        rm -f -- "$managed_path"
+        pruned=$((pruned + 1))
+        case "$managed_path" in
+          "$TARGET_SKILLS"/*) root="$TARGET_SKILLS" ;;
+          *) root="$TARGET_CHECKLISTS" ;;
+        esac
+        dir="$(dirname "$managed_path")"
+        while [[ "$dir" == "$root"/* ]]; do
+          rmdir "$dir" 2>/dev/null || break
+          dir="$(dirname "$dir")"
+        done
+        continue
+      else
+        echo "提示：源中已删除但安装后被修改，已保留：$managed_path" >&2
+        kept=$((kept + 1))
+      fi
+    fi
+    printf '%s\n' "$line" >> "$manifest_temp"
+  done < "$MANIFEST"
+  mv "$manifest_temp" "$MANIFEST"
+  if [[ "$pruned" -gt 0 || "$kept" -gt 0 ]]; then
+    echo "已清理源中已删除的受管文件：移除 $pruned 个，保留已修改 $kept 个。"
+  fi
+}
+prune_stale_files
+
 if [[ "$skip_agents" -eq 1 ]]; then
   echo '已按参数跳过全局规则文件规则区块。'
 fi

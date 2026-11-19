@@ -279,6 +279,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     file)
       if [[ ! -e "$managed_path" ]]; then
         missing_count=$((missing_count + 1))
+        # 文件已不存在，仍加入清理列表，以便清理它遗留的空父目录。
+        printf '%s\n' "$managed_path" >> "$files_to_remove"
       elif [[ ! -f "$managed_path" ]]; then
         printf '%s\n' "$line" >> "$records_to_keep"
         retained_count=$((retained_count + 1))
@@ -325,6 +327,15 @@ fi
 while IFS= read -r managed_file || [[ -n "$managed_file" ]]; do
   [[ -n "$managed_file" ]] || continue
   rm -f -- "$managed_file"
+  case "$managed_file" in
+    "$TARGET_SKILLS"/*) prune_root="$TARGET_SKILLS" ;;
+    *) prune_root="$TARGET_CHECKLISTS" ;;
+  esac
+  prune_dir="$(dirname "$managed_file")"
+  while [[ "$prune_dir" == "$prune_root"/* ]]; do
+    rmdir "$prune_dir" 2>/dev/null || break
+    prune_dir="$(dirname "$prune_dir")"
+  done
 done < "$files_to_remove"
 
 if [[ "$remove_block" -eq 1 ]]; then
