@@ -77,9 +77,9 @@ MARKER_END='<!-- fullstack-quality-kit:end -->'
 
 sha256_stdin() {
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 | awk '{ print $1 }'
+    shasum -a 256 | awk '{ print $1 }' || return 1
   elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum | awk '{ print $1 }'
+    sha256sum | awk '{ print $1 }' || return 1
   else
     echo '失败：未找到 shasum 或 sha256sum，无法校验安装记录。' >&2
     return 1
@@ -89,9 +89,9 @@ sha256_stdin() {
 file_sha256() {
   local file="$1"
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 -- "$file" | awk '{ print $1 }'
+    shasum -a 256 -- "$file" | awk '{ print $1 }' || return 1
   elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum -- "$file" | awk '{ print $1 }'
+    sha256sum -- "$file" | awk '{ print $1 }' || return 1
   else
     echo '失败：未找到 shasum 或 sha256sum，无法校验安装记录。' >&2
     return 1

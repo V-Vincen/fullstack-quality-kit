@@ -62,7 +62,7 @@ description: Review frontend applications built with HTML, CSS, JavaScript/TypeS
 
 ## 清单联动
 
-清单路径按主 skill `fullstack-review`「清单联动」一节解析（CHECKLIST_ROOT），所有候选位置都不存在时必须报告清单缺失。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
+清单路径、候选位置、CHECKLIST_ROOT 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
 
 - 写入前端代码、配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md`、`code-review/frontend-quality.md`；涉及安全代码时另读 `code-review/security-code-quality.md`，测试代码另读 `code-review/test-code-quality.md`。
 - 页面交互、接口结果、表单、路由或状态变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，再读取 `business-test/frontend-interaction.md`、`business-test/api-behavior.md`、`business-test/permission-boundary.md` 或 `business-test/regression-suite.md`。

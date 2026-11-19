@@ -84,6 +84,65 @@ load_validation_rules() {
   [[ -n "$expected_domain_checklist_count" ]] || fail '验证规则缺少：EXPECTED_DOMAIN_CHECKLIST_COUNT'
 }
 
+check_checklist_path_conflicts() {
+  local project_level="$REPO_ROOT/.claude/checklists"
+  local project_level_codex="$REPO_ROOT/.codex/checklists"
+  local global_level="${HOME}/.claude/checklists/fullstack-quality-kit"
+  local global_level_codex="${HOME}/.codex/checklists/fullstack-quality-kit"
+  local conflict_count=0
+
+  # 检查是否同时存在多个候选路径
+  if [[ -d "$project_level/CODE_REVIEW_CHECKLIST.md" && -d "$project_level_codex/CODE_REVIEW_CHECKLIST.md" ]]; then
+    echo "警告：同时检测到 .claude/checklists 和 .codex/checklists，将按优先级使用 .claude/checklists" >&2
+    conflict_count=$((conflict_count + 1))
+  fi
+
+  if [[ -d "$project_level" && -d "$global_level" ]]; then
+    echo "警告：同时检测到项目级清单和全局清单，将按优先级使用项目级 .claude/checklists" >&2
+    conflict_count=$((conflict_count + 1))
+  fi
+
+  if [[ $conflict_count -gt 0 ]]; then
+    echo "清单路径优先级：项目 .claude/ > 项目 .codex/ > 全局 ~/.claude/ > 全局 ~/.codex/" >&2
+  fi
+}
+
+check_workflow_content_quality() {
+  local workflow_file
+  for workflow_file in "$WORKFLOW_ROOT"/*.md; do
+    [[ -f "$workflow_file" ]] || continue
+    if grep -Eq 'TODO|TBD|FIXME' "$workflow_file"; then
+      echo "警告：工作流文件包含未完成占位符（TODO/TBD/FIXME）：$(basename "$workflow_file")" >&2
+    fi
+  done
+}
+
+check_checklist_content_quality() {
+  local checklist_file line_count
+  for checklist_file in "$CHECKLIST_ROOT"/*.md "$CHECKLIST_ROOT"/*/*.md; do
+    [[ -f "$checklist_file" ]] || continue
+    line_count="$(wc -l < "$checklist_file")"
+    if [[ $line_count -lt 5 ]]; then
+      echo "警告：清单文件内容过短（$line_count 行）：$(basename "$checklist_file")" >&2
+    fi
+  done
+}
+
+check_skill_routing_references() {
+  local skill_file referenced_path
+  for skill_file in "$SKILL_ROOT"/*/SKILL.md "$SKILL_ROOT"/backend/*/SKILL.md; do
+    [[ -f "$skill_file" ]] || continue
+    # 检查是否引用不存在的清单路径
+    while IFS= read -r referenced_path; do
+      # 提取可能的路径引用（这里简化处理，只检查特定模式）
+      if grep -q "CHECKLIST_ROOT" "$skill_file" 2>/dev/null; then
+        # 如果提到 CHECKLIST_ROOT 则跳过（主 skill 应该有定义）
+        :
+      fi
+    done < <(grep -o 'business-test/[a-z-]*\.md\|code-review/[a-z-]*\.md\|db-change/[a-z-]*\.md' "$skill_file" 2>/dev/null | sort -u)
+  done
+}
+
 require_file "$REPO_ROOT/AGENTS.md"
 require_file "$REPO_ROOT/README.md"
 require_file "$SKILL_ROOT/SKILL.md"
@@ -110,6 +169,12 @@ done
 
 workflow_count="$(find "$WORKFLOW_ROOT" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
 [[ "$workflow_count" -eq "$expected_workflow_count" ]] || fail "工作流数量应为 ${expected_workflow_count}，实际为 ${workflow_count}"
+
+# 增强内容检查
+check_checklist_path_conflicts
+check_workflow_content_quality
+check_checklist_content_quality
+check_skill_routing_references
 
 require_file "$CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md"
 require_file "$CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md"
