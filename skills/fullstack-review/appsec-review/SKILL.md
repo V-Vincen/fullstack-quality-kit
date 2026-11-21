@@ -62,7 +62,7 @@ description: Review full-stack applications for authentication, authorization, t
 
 ## 清单联动
 
-清单路径、候选位置、CHECKLIST_ROOT 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
+清单路径、候选位置、`CHECKLIST_ROOT` 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 `code-review/`、`business-test/`、`db-change/` 和 `external-api-doc/` 路径均相对于 `CHECKLIST_ROOT`。
 
 - 写入认证、授权、输入处理、安全配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md` 和 `code-review/security-code-quality.md`；测试代码另读 `code-review/test-code-quality.md`。
 - 认证、授权、越权、敏感数据或接口行为变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，并读取 `business-test/permission-boundary.md`、`business-test/api-behavior.md`、`business-test/concurrency-idempotency.md` 或 `business-test/regression-suite.md`。

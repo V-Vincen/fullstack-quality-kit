@@ -3,45 +3,19 @@
 ### Skill 与清单联动
 
 - 宿主的全局规则文件（Codex 为 AGENTS.md，Claude Code 为 CLAUDE.md）负责全局授权、范围、工具、备份、验证和交付约束；skill 不得降低或绕过这些约束。
-- 触发全局清单后，先读取对应总清单，再按总清单路由读取相关领域子清单；只读取与当前任务相关的子清单。
+- 触发下列场景时，按 `fullstack-review` 主 skill 的「清单联动」解析路径并读取对应总清单，再按总清单路由执行相关领域子清单。只读取本次相关内容，可同时触发多项，不混用不同目录的版本。
 - `fullstack-review` 是唯一主入口，负责按需读取工作流、识别技术领域、选择子 skill、组合领域检查和生成测试；工作流和子 skill 不替代全局清单，也不得扩大用户授权。
 - 代码、配置或脚本写入时，执行 `CODE_REVIEW_CHECKLIST.md` 及相关代码审查子清单。
 - 业务行为、接口结果或页面交互变化时，执行 `BUSINESS_TEST_CHECKLIST.md` 及相关业务测试子清单。
 - 数据库写入或结构变更时，执行 `DB_CHANGE_CHECKLIST.md` 及相关数据库变更子清单。
 - 用户明确要求扫描、整理或生成外部接口文档时，执行 `EXTERNAL_API_DOC_CHECKLIST.md` 及相关外部接口文档子清单。
+- 普通代码开发、单个接口调试和内部接口分析不触发外部接口文档清单；纯讨论、纯解释和只读检查不触发代码审查或数据库变更清单。
+- 主 skill 或所需清单缺失时，报告缺失及未覆盖项；不回退到其他项目目录，不把未执行项记为通过。仍须遵守项目规则并完成可执行的基础验证。
 - 最终交付必须报告使用的 skill、执行的总清单、执行的领域子清单、验证结果、未覆盖项和已知风险。
-
-### 清单路径解析
-
-- `CHECKLIST_ROOT` 按当前宿主的顺序逐个目录解析，第一个包含对应总清单文件的位置生效；同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
-
-在 Codex 中：
-
-~~~text
-1. 当前项目/.codex/checklists/
-2. 当前项目/.claude/checklists/
-3. ~/.codex/checklists/fullstack-quality-kit/
-4. ~/.claude/checklists/fullstack-quality-kit/
-5. 都不存在：报告清单缺失，不得回退到其他项目目录
-~~~
-
-在 Claude Code 中：
-
-~~~text
-1. 当前项目/.claude/checklists/
-2. 当前项目/.codex/checklists/
-3. ~/.claude/checklists/fullstack-quality-kit/
-4. ~/.codex/checklists/fullstack-quality-kit/
-5. 都不存在：报告清单缺失，不得回退到其他项目目录
-~~~
-
-- `CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。
-- 所有候选位置都不存在时，必须报告清单缺失，不得回退到其他项目目录。
 
 ### 安装约束
 
 - 安装脚本只能合并本文件管理的规则区块。
 - 不得覆盖用户完整的全局规则文件（Codex 为 `AGENTS.md`，Claude Code 为 `CLAUDE.md`）。
-- 已有等效全局规则时，应使用跳过规则参数，避免重复写入。
 - 安全升级只替换安装清单记录且内容未被用户修改的文件或规则区块；检测到用户修改时必须停止并报告冲突。
 - 安装、升级和卸载前必须确认目标路径、备份和回滚方式。

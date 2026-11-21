@@ -42,7 +42,7 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循宿主全
 
 ## 清单联动
 
-清单路径解析：CHECKLIST_ROOT 按当前宿主的顺序逐个目录解析，第一个包含对应总清单文件的位置生效；同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
+清单路径解析：`CHECKLIST_ROOT` 按当前宿主的顺序逐个目录解析，第一个包含对应总清单文件的位置生效；同一审查过程中所有领域子清单都从该位置读取，不混用多个位置的版本。
 
 在 Codex 中：
 
@@ -64,9 +64,9 @@ fullstack-review 始终是唯一主入口。开始任务时，先遵循宿主全
 5. 都不存在：报告清单缺失，不得回退到其他项目目录
 ~~~
 
-本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT；CHECKLIST_ROOT 仅是逻辑标识，不要求设置环境变量。子 skill 和总清单不重复维护这段说明，统一按本节解析。
+本节中的 `code-review/`、`business-test/`、`db-change/` 和 `external-api-doc/` 路径均相对于 `CHECKLIST_ROOT`；`CHECKLIST_ROOT` 仅是逻辑标识，不要求设置环境变量。子 skill 和总清单不重复维护这段说明，统一按本节解析。
 
-始终遵循宿主全局规则（AGENTS.md 或 CLAUDE.md）中的授权、范围、备份、验证和交付规则。根据实际变更触发总清单，再读取总清单列出的领域子清单：
+始终遵循宿主全局规则（`AGENTS.md` 或 `CLAUDE.md`）中的授权、范围、备份、验证和交付规则。根据实际变更触发总清单，再读取总清单列出的领域子清单：
 
 - 代码、配置或脚本写入：读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`，并按技术范围读取 `code-review/` 下的子清单。
 - 业务行为、接口结果或页面交互变化：读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，并按测试范围读取 `business-test/` 下的子清单。

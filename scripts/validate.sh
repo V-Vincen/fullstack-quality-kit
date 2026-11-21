@@ -202,8 +202,11 @@ check_host_specific_path_order() {
   if ! grep -qF '在 Codex 中' "$SKILL_ROOT/SKILL.md" || ! grep -qF '在 Claude Code 中' "$SKILL_ROOT/SKILL.md"; then
     fail '主 skill 未分别定义 Codex 与 Claude Code 的清单路径优先级'
   fi
-  if ! grep -qF '在 Codex 中' "$GLOBAL_RULE_BLOCK" || ! grep -qF '在 Claude Code 中' "$GLOBAL_RULE_BLOCK"; then
-    fail '全局规则片段未分别定义 Codex 与 Claude Code 的清单路径优先级'
+  if ! grep -qF '`fullstack-review` 主 skill 的「清单联动」' "$GLOBAL_RULE_BLOCK"; then
+    fail '全局规则片段未引用主 skill 的清单路径规则'
+  fi
+  if grep -Eq 'CHECKLIST_ROOT|\.(codex|claude)/checklists/' "$GLOBAL_RULE_BLOCK"; then
+    fail '全局规则片段不得重复定义清单路径'
   fi
 }
 

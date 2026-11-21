@@ -80,19 +80,19 @@ description: Review relational database engines and database changes for schema 
 
 ## 边界
 
-- MyBatis、JPA/Hibernate、JDBC、Mapper 和 Repository 实现读取 data-access-review。
-- Java 集合、线程池和异常实现读取 java-review。
-- Spring 事务代理、配置、缓存和消息整合读取 springboot-review。
-- 注入、越权、敏感信息和租户隔离读取 appsec-review。
-- 数据变更后的接口、页面和回归用例读取 test-generation。
+- MyBatis、JPA/Hibernate、JDBC、Mapper 和 Repository 实现读取 `data-access-review`。
+- Java 集合、线程池和异常实现读取 `java-review`。
+- Spring 事务代理、配置、缓存和消息整合读取 `springboot-review`。
+- 注入、越权、敏感信息和租户隔离读取 `appsec-review`。
+- 数据变更后的接口、页面和回归用例读取 `test-generation`。
 
 ## 清单联动
 
-清单路径、候选位置、CHECKLIST_ROOT 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
+清单路径、候选位置、`CHECKLIST_ROOT` 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 `code-review/`、`business-test/`、`db-change/` 和 `external-api-doc/` 路径均相对于 `CHECKLIST_ROOT`。
 
-- 写入 SQL、DDL、迁移或数据库配置时，读取 CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md、code-review/code-quality-baseline.md 和 code-review/database-quality.md。
-- 执行数据写入、删除、结构变更或可能造成锁等待的操作时，读取 CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md，并按范围读取 db-change/ 子清单。
-- 数据变化影响接口、页面或状态时，读取 CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md 及相关 business-test/ 子清单。
+- 写入 SQL、DDL、迁移或数据库配置时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md` 和 `code-review/database-quality.md`。
+- 执行数据写入、删除、结构变更或可能造成锁等待的操作时，读取 `CHECKLIST_ROOT/DB_CHANGE_CHECKLIST.md`，并按范围读取 `db-change/` 子清单。
+- 数据变化影响接口、页面或状态时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md` 及相关 `business-test/` 子清单。
 
 ## 输出要求
 

@@ -30,7 +30,7 @@
 
 - `~/.codex/skills/fullstack-review/`
 - `~/.codex/checklists/fullstack-quality-kit/`
-- 未使用跳过规则参数时，全局 `AGENTS.md` 中受标记管理的联动规则区块
+- 全局 `AGENTS.md` 中受标记管理的联动规则区块
 
 `~/.codex/skills/fullstack-review/` 直接包含主 `SKILL.md`、子 skill 和工作流，不会额外嵌套一层 `fullstack-review/` 目录。
 
@@ -50,18 +50,6 @@
 ./scripts/install-global.sh --yes
 ~~~
 
-如果用户完整的全局 `AGENTS.md` 已经包含等效的 skill 与清单联动规则，可以跳过规则区块合并：
-
-~~~bash
-./scripts/install-global.sh --skip-agents
-~~~
-
-非交互安装时可以组合参数：
-
-~~~bash
-./scripts/install-global.sh --yes --skip-agents
-~~~
-
 也可以指定其他全局目录：
 
 ~~~bash
@@ -78,7 +66,6 @@
 
 ~~~bash
 ./scripts/install-global.sh --target claude
-./scripts/install-global.sh --yes --target claude --skip-agents
 ./scripts/install-project.sh --target claude /绝对路径/业务项目
 ./scripts/status.sh --target claude /绝对路径/业务项目
 ./scripts/uninstall-global.sh --yes --target claude
@@ -92,14 +79,14 @@
 
 1. 比较原始清单与仓库当前清单，确认是否存在本机独有内容。
 2. 备份原始清单和全局 `AGENTS.md`。
-3. 将全局规则中的固定清单路径改为 `CHECKLIST_ROOT`，并补充项目级优先、全局命名空间兜底的解析规则。
-4. 全局规则已经具备等效联动内容时，使用 `--skip-agents` 安装 skill 和命名空间清单。
+3. 经用户确认后，从全局规则的个人部分移除旧工具专属清单引用，保留通用授权与验证要求。安装脚本不会修改管理区块之外的内容。
+4. 正常安装并由脚本登记联动区块。
 5. 验证项目级优先路径、全局兜底路径、重复安装和安装清单状态。
 6. 保留原始根目录清单，完成一次安装后的真实项目审查；再次确认后才逐个清理旧副本。
 
 原始根目录清单不会被全局安装清单记录，全局卸载脚本也不会处理它们。清理时必须保留 `~/.codex/checklists/fullstack-quality-kit/`。
 
-脚本只合并 `rules/global-agents.block.md` 管理的规则区块，不覆盖用户完整的全局 `AGENTS.md`。`--skip-agents` 只跳过规则区块，不影响 skill 和清单安装。
+脚本只合并 `rules/global-agents.block.md` 管理的规则区块，不覆盖用户完整的全局 `AGENTS.md`。
 
 全局安装会在 `~/.codex/checklists/fullstack-quality-kit/.fullstack-quality-kit.manifest` 写入安装清单 v2。清单只记录由本工具创建或安全升级的文件和规则区块，并保存内容哈希；安装前已存在且内容一致、但不属于本工具的文件不会被纳入卸载范围。
 

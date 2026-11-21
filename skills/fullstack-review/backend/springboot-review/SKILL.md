@@ -60,7 +60,7 @@ description: Review Spring Boot applications for dependency injection, web APIs,
 
 ## 清单联动
 
-清单路径、候选位置、CHECKLIST_ROOT 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 code-review/、business-test/、db-change/ 和 external-api-doc/ 路径均相对于 CHECKLIST_ROOT。
+清单路径、候选位置、`CHECKLIST_ROOT` 定义和路径解析规则，详见主 skill `fullstack-review`「清单联动」一节。本节中的 `code-review/`、`business-test/`、`db-change/` 和 `external-api-doc/` 路径均相对于 `CHECKLIST_ROOT`。
 
 - 写入 Spring Boot 代码、配置或测试代码时，读取 `CHECKLIST_ROOT/CODE_REVIEW_CHECKLIST.md`、`code-review/code-quality-baseline.md`、`code-review/springboot-quality.md`；测试代码另读 `code-review/test-code-quality.md`。
 - 接口、事务、缓存、消息或状态行为变化时，读取 `CHECKLIST_ROOT/BUSINESS_TEST_CHECKLIST.md`，再按范围读取 `business-test/api-behavior.md`、`business-test/state-transition.md`、`business-test/concurrency-idempotency.md` 或 `business-test/regression-suite.md`。

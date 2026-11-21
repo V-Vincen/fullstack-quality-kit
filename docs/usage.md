@@ -98,7 +98,7 @@ $fullstack-review
 
 ## 案例二：全局安装和调用
 
-全局安装适合让多个业务项目共用同一套 skill 和清单。默认目标是 `~/.codex/`，不会覆盖用户完整的全局 `AGENTS.md`，只合并 `rules/global-agents.block.md` 管理的规则区块。已有等效联动规则时，可以使用跳过规则参数，避免重复写入。
+全局安装适合让多个业务项目共用同一套 skill 和清单。默认目标是 `~/.codex/`，不会覆盖用户完整的全局 `AGENTS.md`，只合并 `rules/global-agents.block.md` 管理的规则区块。
 
 安装后的 `~/.codex/skills/fullstack-review/` 直接包含 `SKILL.md`、子 skill 和工作流。安装清单 v2 只记录本工具创建或安全升级的内容，并为每项保存内容哈希；因此全局卸载不会处理原先已存在、但内容刚好一致的用户文件。
 
@@ -122,12 +122,6 @@ cd /path/to/fullstack-quality-kit
 
 脚本会在修改前检查目标文件。安装清单记录且内容未被用户修改的旧版本可以安全升级；没有安装记录或已被用户修改的不同内容会触发冲突并停止。
 
-如果全局 `AGENTS.md` 已经包含等效联动规则，只安装 skill 和清单：
-
-~~~bash
-./scripts/install-global.sh --skip-agents
-~~~
-
 预期结果：
 
 ~~~text
@@ -141,12 +135,6 @@ cd /path/to/fullstack-quality-kit
 
 ~~~bash
 ./scripts/install-global.sh --yes
-~~~
-
-已有等效全局规则时：
-
-~~~bash
-./scripts/install-global.sh --yes --skip-agents
 ~~~
 
 安装后检查：
@@ -164,12 +152,6 @@ cd /path/to/fullstack-quality-kit
 已安装且与当前源一致：<Codex 全局目录>/checklists/fullstack-quality-kit
 全局安装清单 v2：一致 N 个，已修改 0 个，缺失 0 个，格式异常 0 个
 全局规则管理区块：已纳入安装清单
-~~~
-
-如果安装时使用了 `--skip-agents`，最后一行应改为：
-
-~~~text
-未合并全局规则管理区块
 ~~~
 
 重新打开 Codex 后，在任意业务项目中调用：
@@ -290,7 +272,7 @@ cd /path/to/fullstack-quality-kit
 
 - `validate` 脚本通过。
 - 项目级或全局目标显示“已安装且与当前源一致”。
-- 项目级安装存在安装清单 v1；全局安装存在安装清单 v2。未跳过全局规则时，规则管理区块已纳入全局安装清单；跳过规则时，原有全局 `AGENTS.md` 保持不变。
+- 项目级安装存在安装清单 v1；全局安装存在安装清单 v2，规则管理区块已纳入全局安装清单。
 - 重新打开 Codex 后可以调用 `$fullstack-review`。
 - 审查结果包含触发场景、证据、根因、影响、修复建议、验证结果、未覆盖项和已知风险。
 - 常规测试用例覆盖正常、失败、异常、边界、权限、重复执行、并发与幂等、回归等适用场景。
